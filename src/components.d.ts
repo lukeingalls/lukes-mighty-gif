@@ -10,10 +10,6 @@ export namespace Components {
         "src": string;
     }
 }
-export interface LukesMightyGifCustomEvent<T> extends CustomEvent<T> {
-    detail: T;
-    target: HTMLLukesMightyGifElement;
-}
 declare global {
     interface HTMLLukesMightyGifElement extends Components.LukesMightyGif, HTMLStencilElement {
     }
@@ -27,7 +23,6 @@ declare global {
 }
 declare namespace LocalJSX {
     interface LukesMightyGif {
-        "onOnError"?: (event: LukesMightyGifCustomEvent<string>) => void;
         "src"?: string;
     }
     interface IntrinsicElements {
