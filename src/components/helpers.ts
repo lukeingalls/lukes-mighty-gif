@@ -3,10 +3,6 @@ import isEmpty from 'lodash.isempty';
 import { bits, concat } from './utils';
 
 export const doGif = (url: string) => {
-  // DOM Cache
-
-  // =========
-
   const dom = {
     errorMessage: document.querySelector('#error-message'),
     filler: document.querySelector('#scrubber-bar-filler') as HTMLDivElement,
