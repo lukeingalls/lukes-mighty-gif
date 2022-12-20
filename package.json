@@ -26,7 +26,11 @@
     "generate": "stencil generate"
   },
   "dependencies": {
-    "@stencil/core": "^2.13.0"
+    "@stencil/core": "^2.13.0",
+    "@types/lodash.clamp": "^4.0.7",
+    "@types/lodash.isempty": "^4.4.7",
+    "lodash.clamp": "^4.0.3",
+    "lodash.isempty": "^4.4.0"
   },
   "devDependencies": {
     "@types/jest": "^27.0.3",
