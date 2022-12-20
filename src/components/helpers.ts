@@ -2,7 +2,9 @@ import clamp from 'lodash.clamp';
 import isEmpty from 'lodash.isempty';
 import { bits, concat } from './utils';
 
-export const doGif = (url: string) => {
+const chainPromises = [(x, y) => x.then(y), Promise.resolve()];
+
+export const doGif = (gif: ArrayBuffer) => {
   const dom = {
     errorMessage: document.querySelector('#error-message'),
     filler: document.querySelector('#scrubber-bar-filler') as HTMLDivElement,
@@ -26,22 +28,12 @@ export const doGif = (url: string) => {
   // Validate URL
   // ============
 
-  let downloadReady;
   let state: any = {};
 
   // Download GIF
   // ============
 
-  (() => {
-    console.log('downloading...', url);
-    console.time('download');
-    const h = new XMLHttpRequest();
-    h.responseType = 'arraybuffer';
-    h.onload = request => (downloadReady = handleGIF((request.target as any).response));
-    h.onerror = showError.bind(null, url);
-    h.open('GET', url, true);
-    h.send();
-  })();
+  handleGIF(gif);
 
   // Initialize player
   // =================
@@ -82,7 +74,6 @@ export const doGif = (url: string) => {
   }
 
   function handleGIF(buffer) {
-    console.timeEnd('download');
     console.time('parse');
     const bytes = new Uint8Array(buffer);
     init();
@@ -151,8 +142,6 @@ export const doGif = (url: string) => {
       renderFrame(state.frames[i], context.display);
     }
   }
-
-  const chainPromises = [(x, y) => x.then(y), Promise.resolve()];
 
   function renderKeyFrames() {
     console.time('render-keyframes');

@@ -1,5 +1,6 @@
-import { Component, Host, h, Prop, Watch } from '@stencil/core';
+import { Component, Host, h, Prop, Watch, State } from '@stencil/core';
 import { doGif } from '../helpers';
+import download from './lib/download';
 import isUrlGif from './lib/isUrlGif';
 
 @Component({
@@ -10,6 +11,8 @@ import isUrlGif from './lib/isUrlGif';
 })
 export class LukesMightyGif {
   @Prop() src: string;
+
+  @State() gif: ArrayBuffer;
 
   componentDidLoad() {
     if (this.src) {
@@ -23,15 +26,25 @@ export class LukesMightyGif {
       this.handleSrcChange();
     }
   }
-
   handleSrcChange() {
     isUrlGif(this.src).then(result => {
       if (result.type === 'gif') {
-        doGif(result.url);
+        download(result.url)
+          .then(gif => {
+            this.gif = gif;
+          })
+          .catch(this.handleError);
         return;
       }
       this.handleError(result.reason);
     });
+  }
+
+  @Watch('gif')
+  gifChanged(newGif, oldGif) {
+    if (newGif && newGif !== oldGif) {
+      doGif(newGif);
+    }
   }
 
   handleError(error) {
