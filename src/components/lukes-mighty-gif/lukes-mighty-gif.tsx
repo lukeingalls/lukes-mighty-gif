@@ -17,9 +17,9 @@ export class LukesMightyGif {
   }
 
   @Watch('src')
-  srcChanged(newSrc, _oldSrc) {
-    if (newSrc) {
-      // doGif(this.src);
+  srcChanged(newSrc, oldSrc) {
+    if (newSrc && newSrc !== oldSrc) {
+      doGif(this.src);
     }
   }
 
