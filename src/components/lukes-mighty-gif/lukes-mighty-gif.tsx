@@ -1,5 +1,6 @@
 import { Component, Host, h, Prop, Watch } from '@stencil/core';
 import { doGif } from '../helpers';
+import isUrlGif from './lib/isUrlGif';
 
 @Component({
   tag: 'lukes-mighty-gif',
@@ -12,15 +13,29 @@ export class LukesMightyGif {
 
   componentDidLoad() {
     if (this.src) {
-      doGif(this.src);
+      this.handleSrcChange();
     }
   }
 
   @Watch('src')
   srcChanged(newSrc, oldSrc) {
     if (newSrc && newSrc !== oldSrc) {
-      doGif(this.src);
+      this.handleSrcChange();
     }
+  }
+
+  handleSrcChange() {
+    isUrlGif(this.src).then(result => {
+      if (result.type === 'gif') {
+        doGif(result.url);
+        return;
+      }
+      this.handleError(result.reason);
+    });
+  }
+
+  handleError(error) {
+    console.error(error);
   }
 
   render() {
@@ -42,6 +57,7 @@ export class LukesMightyGif {
             </div>
           </div>
         </div>
+        <div id="error-message" style={{ color: 'red' }} />
       </Host>
     );
   }

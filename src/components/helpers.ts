@@ -29,42 +29,19 @@ export const doGif = (url: string) => {
   let downloadReady;
   let state: any = {};
 
-  function confirmGIF(url) {
-    return new Promise(function (ignore, use) {
-      if (url === 'undefined') return ignore('undefined');
-      const h = new XMLHttpRequest();
-      h.open('GET', url);
-      h.setRequestHeader('Range', 'bytes=0-5');
-      h.onload = () => {
-        const validHeaders = ['GIF87a', 'GIF89a'];
-        if (validHeaders.includes(h.responseText.substr(0, 6))) use(url);
-        else ignore('bad header');
-      };
-      h.onerror = () => ignore('error loading');
-      h.send(null);
-    });
-  }
-
   // Download GIF
   // ============
 
-  confirmGIF(url).then(
-    reason => {
-      showError('Not a valid GIF file.');
-      console.log('Could not load GIF from URL because: ', reason);
-    },
-    validURL => {
-      console.log('downloading...', validURL);
-      console.time('download');
-      const h = new XMLHttpRequest();
-      h.responseType = 'arraybuffer';
-      h.onload = request => (downloadReady = handleGIF((request.target as any).response));
-      h.onerror = showError.bind(null, validURL);
-      h.open('GET', validURL, true);
-      h.send();
-      url = validURL;
-    },
-  );
+  (() => {
+    console.log('downloading...', url);
+    console.time('download');
+    const h = new XMLHttpRequest();
+    h.responseType = 'arraybuffer';
+    h.onload = request => (downloadReady = handleGIF((request.target as any).response));
+    h.onerror = showError.bind(null, url);
+    h.open('GET', url, true);
+    h.send();
+  })();
 
   // Initialize player
   // =================
