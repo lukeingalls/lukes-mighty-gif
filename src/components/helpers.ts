@@ -66,13 +66,11 @@ const doGif = (
   }
 
   function handleGIF(buffer) {
-    console.time('parse');
     const bytes = new Uint8Array(buffer);
     init();
 
     // Image dimensions
     const dimensions = new Uint16Array(buffer, 6, 2);
-    console.log({ dimensions });
     [state.width, state.height] = dimensions;
     canvas.width = display_canvas.width = state.width;
     canvas.height = display_canvas.height = state.height;
@@ -83,7 +81,6 @@ const doGif = (
     const gct = bytes.subarray(13, pos);
 
     state.frames = parseFrames(buffer, pos, gct, state.keyFrameRate);
-    console.timeEnd('parse');
 
     return renderKeyFrames()
       .then(renderIntermediateFrames)
@@ -135,7 +132,6 @@ const doGif = (
   }
 
   function renderKeyFrames() {
-    console.time('render-keyframes');
     return state.frames
       .map(frame => () => {
         return createImageBitmap(frame.blob)
@@ -149,7 +145,6 @@ const doGif = (
   }
 
   function renderIntermediateFrames() {
-    console.time('background-render');
     return state.frames.map(frame => () => renderAndSave(frame)).reduce(...chainPromises);
   }
 
