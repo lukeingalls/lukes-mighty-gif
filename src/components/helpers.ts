@@ -11,7 +11,14 @@ const doGif = (
     canvas,
     onProgress,
     onDurationChange,
-  }: { ctx: CanvasRenderingContext2D; canvas: HTMLCanvasElement; onProgress: (currentTime: number) => void; onDurationChange: (duration: number) => void },
+    onError,
+  }: {
+    ctx: CanvasRenderingContext2D;
+    canvas: HTMLCanvasElement;
+    onProgress: (currentTime: number) => void;
+    onDurationChange: (duration: number) => void;
+    onError: (error: Error) => void;
+  },
 ) => {
   const dom = {
     errorMessage: document.querySelector('#error-message'),
@@ -50,10 +57,6 @@ const doGif = (
 
   // Initialize player
   // =================
-
-  function showError(msg) {
-    dom.errorMessage.innerHTML = `<span class="error">${msg}</span>`;
-  }
 
   function handleGIF(buffer) {
     const bytes = new Uint8Array(buffer);
@@ -237,7 +240,7 @@ const doGif = (
           onDurationChange(duration);
           return frames;
         default:
-          showError('Error: Could not decode GIF');
+          onError(COULDNT_DECODE_GIF);
           return [];
       }
     }
@@ -304,8 +307,9 @@ const doGif = (
 };
 
 const COULDNT_FETCH_RESOURCE = new Error('Could not fetch resource');
-const NOT_SUPPORTED = new Error('Not supported');
+const COULDNT_DECODE_GIF = new Error('Could not decode GIF');
 const NOT_READY = new Error('Not ready');
+const NOT_SUPPORTED = new Error('Not supported');
 
 export default class Gif {
   private _url: string;
@@ -345,7 +349,7 @@ export default class Gif {
   }
 
   private _onLoad: () => void = () => {
-    doGif(this.gif_data, { ctx: this.render_canvas_ctx, canvas: this.render_canvas, onProgress: this.onProgress, onDurationChange: this.onDurationChange });
+    doGif(this.gif_data, { ctx: this.render_canvas_ctx, canvas: this.render_canvas, onProgress: this.onProgress, onDurationChange: this.onDurationChange, onError: this.onError });
   };
 
   get onLoad() {
@@ -354,7 +358,13 @@ export default class Gif {
 
   set onLoad(fn: () => void) {
     this._onLoad = () => {
-      doGif(this.gif_data, { ctx: this.render_canvas_ctx, canvas: this.render_canvas, onProgress: this.onProgress, onDurationChange: this.onDurationChange });
+      doGif(this.gif_data, {
+        ctx: this.render_canvas_ctx,
+        canvas: this.render_canvas,
+        onProgress: this.onProgress,
+        onDurationChange: this.onDurationChange,
+        onError: this.onError,
+      });
       fn();
     };
   }
