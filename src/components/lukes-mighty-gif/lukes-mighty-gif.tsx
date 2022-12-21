@@ -1,4 +1,4 @@
-import { Component, Host, h, Prop, Watch, Event, EventEmitter } from '@stencil/core';
+import { Component, Host, h, Prop, Watch, Event, EventEmitter, State } from '@stencil/core';
 import Gif from '../helpers';
 
 @Component({
@@ -12,9 +12,14 @@ export class LukesMightyGif {
 
   @Prop() src: string;
 
+  @State() duration: number;
+  @State() currentTime: number;
+
+  @Event({ eventName: 'ondurationchange' }) durationchange: EventEmitter;
+  @Event({ eventName: 'onerror' }) error: EventEmitter<Error>;
   @Event({ eventName: 'onloadstart' }) loadstart: EventEmitter;
   @Event({ eventName: 'onload' }) load: EventEmitter;
-  @Event({ eventName: 'onerror' }) error: EventEmitter<Error>;
+  @Event({ eventName: 'onprogress' }) progress: EventEmitter;
 
   componentDidLoad() {
     if (this.src) {
@@ -33,6 +38,14 @@ export class LukesMightyGif {
     this.gif.onLoad = () => this.load.emit();
     this.gif.onLoadStart = () => this.loadstart.emit();
     this.gif.onError = (error: Error) => this.error.emit(error);
+    this.gif.onDurationChange = (duration: number) => {
+      this.durationchange.emit();
+      this.duration = duration;
+    };
+    this.gif.onProgress = (currentTime: number) => {
+      this.currentTime = currentTime;
+      this.progress.emit(currentTime);
+    };
   }
 
   handleError(error) {
@@ -50,9 +63,8 @@ export class LukesMightyGif {
               <canvas id="canvas-display"></canvas>
             </div>
 
-            <div id="scrubber-bar">
-              <div id="scrubber-bar-line"></div>
-              <div id="scrubber-bar-filler"></div>
+            <div id="scrubber-bar" class="progress-bar">
+              <div class="progress-bar__filler" style={{ width: `${(100 * this.currentTime) / this.duration}%` }} />
               <div id="scrubber-bar-controller"></div>
             </div>
           </div>

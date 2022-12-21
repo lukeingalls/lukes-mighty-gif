@@ -27,9 +27,11 @@ declare global {
 }
 declare namespace LocalJSX {
     interface LukesMightyGif {
+        "onOndurationchange"?: (event: LukesMightyGifCustomEvent<any>) => void;
         "onOnerror"?: (event: LukesMightyGifCustomEvent<Error>) => void;
         "onOnload"?: (event: LukesMightyGifCustomEvent<any>) => void;
         "onOnloadstart"?: (event: LukesMightyGifCustomEvent<any>) => void;
+        "onOnprogress"?: (event: LukesMightyGifCustomEvent<any>) => void;
         "src"?: string;
     }
     interface IntrinsicElements {

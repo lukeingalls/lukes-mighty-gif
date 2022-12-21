@@ -16,5 +16,6 @@
     gif.addEventListener('onloadstart', () => console.log('loadstart'));
     gif.addEventListener('onload', () => console.log('load'));
     gif.addEventListener('onerror', () => console.log('error'));
+    gif.addEventListener('ondurationchange', duration => console.log('duration', duration));
   </script>
 </html>

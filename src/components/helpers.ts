@@ -5,13 +5,20 @@ import { bits, concat } from './utils';
 
 const chainPromises = [(x, y) => x.then(y), Promise.resolve()];
 
-const doGif = (gif: ArrayBuffer, { ctx, canvas }: { ctx: CanvasRenderingContext2D; canvas: HTMLCanvasElement }) => {
+const doGif = (
+  gif: ArrayBuffer,
+  {
+    ctx,
+    canvas,
+    onProgress,
+    onDurationChange,
+  }: { ctx: CanvasRenderingContext2D; canvas: HTMLCanvasElement; onProgress: (currentTime: number) => void; onDurationChange: (duration: number) => void },
+) => {
   const dom = {
     errorMessage: document.querySelector('#error-message'),
     filler: document.querySelector('#scrubber-bar-filler') as HTMLDivElement,
     bar: document.querySelector('#scrubber-bar') as HTMLDivElement,
     image: document.querySelector('#image-holder'),
-    line: document.querySelector('#scrubber-bar-line') as HTMLDivElement,
     spacer: document.querySelector('#bubble-spacer'),
   };
 
@@ -74,10 +81,11 @@ const doGif = (gif: ArrayBuffer, { ctx, canvas }: { ctx: CanvasRenderingContext2
 
     // Image dimensions
     const dimensions = new Uint16Array(buffer, 6, 2);
+    console.log({ dimensions });
     [state.width, state.height] = dimensions;
     canvas.width = display_canvas.width = state.width;
     canvas.height = display_canvas.height = state.height;
-    dom.bar.style.width = dom.line.style.width = state.barWidth = `${Math.max(state.width, 450)}px`;
+    dom.bar.style.width = state.barWidth = `${state.width}px`;
     const content = document.querySelector('#content') as HTMLDivElement;
     content.style.width = state.barWidth;
     content.style.height = state.height;
@@ -118,9 +126,10 @@ const doGif = (gif: ArrayBuffer, { ctx, canvas }: { ctx: CanvasRenderingContext2
   function showFrame(frameNumber) {
     const lastFrame = state.frames.length - 1;
     frameNumber = clamp(frameNumber, 0, lastFrame);
+    const currentTime = state.frames.slice(0, frameNumber + 1).reduce((sum, frame) => sum + frame.delayTime, 0);
     const frame = state.frames[(state.currentFrame = frameNumber)];
-    let fillX = (frameNumber / lastFrame) * state.barWidth - 2;
-    dom.filler.style.left = `${Math.max(0, fillX)}`;
+
+    onProgress(currentTime);
 
     // Draw current frame only if it's already rendered
     if (frame.isRendered || state.debug.showRawFrames) {
@@ -255,6 +264,8 @@ const doGif = (gif: ArrayBuffer, { ctx, canvas }: { ctx: CanvasRenderingContext2
           break;
         }
         case 0x3b: // End of file
+          const duration = frames.reduce((sum, frame) => sum + frame.delayTime, 0);
+          onDurationChange(duration);
           return frames;
         default:
           return showError('Error: Could not decode GIF');
@@ -338,6 +349,16 @@ export default class Gif {
   // EVENT LISTENERS
   // =====================
 
+  private _onDurationChange: (duration: number) => void = () => {};
+
+  get onDurationChange() {
+    return this._onDurationChange;
+  }
+
+  set onDurationChange(fn: (duration: number) => void) {
+    this._onDurationChange = fn;
+  }
+
   private _onError: (error: Error) => void = error => {
     this.error = error;
   };
@@ -354,7 +375,7 @@ export default class Gif {
   }
 
   private _onLoad: () => void = () => {
-    doGif(this.gif_data, { ctx: this.render_canvas_ctx, canvas: this.render_canvas });
+    doGif(this.gif_data, { ctx: this.render_canvas_ctx, canvas: this.render_canvas, onProgress: this.onProgress, onDurationChange: this.onDurationChange });
   };
 
   get onLoad() {
@@ -363,7 +384,7 @@ export default class Gif {
 
   set onLoad(fn: () => void) {
     this._onLoad = () => {
-      doGif(this.gif_data, { ctx: this.render_canvas_ctx, canvas: this.render_canvas });
+      doGif(this.gif_data, { ctx: this.render_canvas_ctx, canvas: this.render_canvas, onProgress: this.onProgress, onDurationChange: this.onDurationChange });
       fn();
     };
   }
@@ -391,6 +412,16 @@ export default class Gif {
         })
         .catch(this.onError);
     };
+  }
+
+  private _onProgress: (currentTime: number) => void = () => {};
+
+  get onProgress() {
+    return this._onProgress;
+  }
+
+  set onProgress(fn: (currentTime: number) => void) {
+    this._onProgress = fn;
   }
 
   constructor(url: string) {

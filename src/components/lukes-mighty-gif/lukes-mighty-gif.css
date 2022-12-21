@@ -14,3 +14,16 @@
   left: -9999px;
   top: -9999px;
 }
+
+.progress-bar {
+  height: 10px;
+  position: relative;
+}
+
+.progress-bar__filler {
+  height: 100%;
+  position: absolute;
+  left: 0;
+  background-color: red;
+  transition: 0.2s;
+}
