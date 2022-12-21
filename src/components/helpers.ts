@@ -58,7 +58,7 @@ const doGif = (
   // Initialize player
   // =================
 
-  function handleGIF(buffer) {
+  function handleGIF(buffer: ArrayBuffer) {
     const bytes = new Uint8Array(buffer);
 
     // Image dimensions
