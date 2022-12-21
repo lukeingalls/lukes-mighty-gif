@@ -43,11 +43,7 @@ const doGif = (
     }
 
     state = {
-      barWidth: null,
       currentFrame: 0,
-      debug: {
-        showRawFrames: false,
-      },
       hasTransparency: false,
       keyFrameRate: 15, // Performance: Pre-render every n frames
       frame() {
@@ -57,9 +53,7 @@ const doGif = (
         return this.frame().delayTime / Math.abs(this.speed);
       },
       frames: [],
-      playing: false,
       playTimeoutId: null,
-      scrubbing: false,
       speed: 1,
       height: 1,
       width: 1,
@@ -82,10 +76,7 @@ const doGif = (
     [state.width, state.height] = dimensions;
     canvas.width = display_canvas.width = state.width;
     canvas.height = display_canvas.height = state.height;
-    dom.bar.style.width = state.barWidth = `${state.width}px`;
-    const content = document.querySelector('#content') as HTMLDivElement;
-    content.style.width = state.barWidth;
-    content.style.height = state.height;
+    dom.bar.style.width = `${state.width}px`;
 
     // Record global color table
     let pos = 13 + colorTableSize(bytes[10]);
@@ -129,7 +120,7 @@ const doGif = (
     onProgress(currentTime);
 
     // Draw current frame only if it's already rendered
-    if (frame.isRendered || state.debug.showRawFrames) {
+    if (frame.isRendered) {
       if (state.hasTransparency) {
         display_ctx.clearRect(0, 0, state.width, state.height);
       }

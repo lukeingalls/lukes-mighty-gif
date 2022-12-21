@@ -57,15 +57,11 @@ export class LukesMightyGif {
       <Host>
         <img src={this.src} />
 
-        <div id="content">
-          <div id="bubble-spacer">
-            <div id="image-holder">
-              <canvas id="canvas-display"></canvas>
-            </div>
+        <div>
+          <canvas id="canvas-display"></canvas>
 
-            <div id="scrubber-bar" class="progress-bar">
-              <div class="progress-bar__filler" style={{ width: `${(100 * this.currentTime) / this.duration}%` }} />
-            </div>
+          <div id="scrubber-bar" class="progress-bar">
+            <div class="progress-bar__filler" style={{ width: `${(100 * this.currentTime) / this.duration}%` }} />
           </div>
         </div>
         <div id="render-canvas-mount-point" class="sr-only" />
