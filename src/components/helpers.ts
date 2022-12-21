@@ -1,9 +1,8 @@
 import clamp from 'lodash.clamp';
-import isEmpty from 'lodash.isempty';
 import download from './lukes-mighty-gif/lib/download';
 import { bits, concat } from './utils';
 
-const chainPromises = [(x, y) => x.then(y), Promise.resolve()];
+const chainPromises = [(x, y) => x.then(y), Promise.resolve()] as const;
 
 const doGif = (
   gif: ArrayBuffer,
@@ -26,7 +25,23 @@ const doGif = (
   // Validate URL
   // ============
 
-  let state: any = {};
+  const state = {
+    currentFrame: 0,
+    hasTransparency: false,
+    keyFrameRate: 15, // Performance: Pre-render every n frames
+    frame() {
+      return this.frames[this.currentFrame];
+    },
+    frameDelay() {
+      return this.frame().delayTime / Math.abs(this.speed);
+    },
+    frames: [] as any[],
+    playTimeoutId: null,
+    speed: 1,
+    height: 1,
+    width: 1,
+    firstFrameChecked: false,
+  };
 
   // Download GIF
   // ============
@@ -36,38 +51,12 @@ const doGif = (
   // Initialize player
   // =================
 
-  function init() {
-    // Clean up any previous scrubbing
-    if (!isEmpty(state)) {
-      display_ctx.clearRect(0, 0, state.width, state.height);
-    }
-
-    state = {
-      currentFrame: 0,
-      hasTransparency: false,
-      keyFrameRate: 15, // Performance: Pre-render every n frames
-      frame() {
-        return this.frames[this.currentFrame];
-      },
-      frameDelay() {
-        return this.frame().delayTime / Math.abs(this.speed);
-      },
-      frames: [],
-      playTimeoutId: null,
-      speed: 1,
-      height: 1,
-      width: 1,
-    };
-    (window as any).state = state;
-  }
-
   function showError(msg) {
     dom.errorMessage.innerHTML = `<span class="error">${msg}</span>`;
   }
 
   function handleGIF(buffer) {
     const bytes = new Uint8Array(buffer);
-    init();
 
     // Image dimensions
     const dimensions = new Uint16Array(buffer, 6, 2);
@@ -88,10 +77,9 @@ const doGif = (
       .catch(err => console.error('Rendering GIF failed!', err));
   }
 
-  function advanceFrame(direction = 'auto') {
+  function advanceFrame() {
     let frameNumber = state.currentFrame;
-    if (direction === 'auto') frameNumber += state.speed > 0 ? 1 : -1;
-    else frameNumber += direction;
+    frameNumber += state.speed > 0 ? 1 : -1;
 
     const loopBackward = frameNumber < 0;
     const loopForward = frameNumber >= state.frames.length;
@@ -103,9 +91,7 @@ const doGif = (
 
     showFrame(frameNumber);
 
-    if (direction === 'auto') {
-      state.playTimeoutId = setTimeout(advanceFrame, state.frameDelay());
-    }
+    state.playTimeoutId = setTimeout(advanceFrame, state.frameDelay());
   }
 
   function showFrame(frameNumber) {
@@ -251,7 +237,8 @@ const doGif = (
           onDurationChange(duration);
           return frames;
         default:
-          return showError('Error: Could not decode GIF');
+          showError('Error: Could not decode GIF');
+          return [];
       }
     }
   }
