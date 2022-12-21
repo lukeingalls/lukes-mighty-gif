@@ -58,14 +58,13 @@ export class LukesMightyGif {
         <img src={this.src} />
 
         <div id="content">
-          <div id="bubble-spacer" class="displayed">
-            <div id="image-holder" class="cf">
+          <div id="bubble-spacer">
+            <div id="image-holder">
               <canvas id="canvas-display"></canvas>
             </div>
 
             <div id="scrubber-bar" class="progress-bar">
               <div class="progress-bar__filler" style={{ width: `${(100 * this.currentTime) / this.duration}%` }} />
-              <div id="scrubber-bar-controller"></div>
             </div>
           </div>
         </div>

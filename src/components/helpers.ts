@@ -16,10 +16,7 @@ const doGif = (
 ) => {
   const dom = {
     errorMessage: document.querySelector('#error-message'),
-    filler: document.querySelector('#scrubber-bar-filler') as HTMLDivElement,
     bar: document.querySelector('#scrubber-bar') as HTMLDivElement,
-    image: document.querySelector('#image-holder'),
-    spacer: document.querySelector('#bubble-spacer'),
   };
 
   const display_canvas = document.querySelector('#canvas-display') as HTMLCanvasElement;
