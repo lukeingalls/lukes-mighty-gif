@@ -1,10 +1,11 @@
 import clamp from 'lodash.clamp';
 import isEmpty from 'lodash.isempty';
+import download from './lukes-mighty-gif/lib/download';
 import { bits, concat } from './utils';
 
 const chainPromises = [(x, y) => x.then(y), Promise.resolve()];
 
-export const doGif = (gif: ArrayBuffer) => {
+const doGif = (gif: ArrayBuffer) => {
   const dom = {
     errorMessage: document.querySelector('#error-message'),
     filler: document.querySelector('#scrubber-bar-filler') as HTMLDivElement,
@@ -18,7 +19,6 @@ export const doGif = (gif: ArrayBuffer) => {
     display: document.querySelector('#canvas-display') as HTMLCanvasElement,
     render: document.querySelector('#canvas-render') as HTMLCanvasElement,
   };
-  console.log({ canvas, canvi: document.querySelectorAll('canvas') });
 
   const context = {
     display: canvas.display.getContext('2d'),
@@ -327,3 +327,100 @@ export const doGif = (gif: ArrayBuffer) => {
     else ctx.putImageData(frame.putable, 0, 0);
   }
 };
+
+const COULDNT_FETCH_RESOURCE = new Error('Could not fetch resource');
+const NOT_SUPPORTED = new Error('Not supported');
+
+export default class Gif {
+  private _url: string;
+  private gif_data: ArrayBuffer;
+
+  public error: Error;
+
+  // =====================
+  // EVENT LISTENERS
+  // =====================
+
+  private _onError: (error: Error) => void = error => {
+    this.error = error;
+  };
+
+  get onError() {
+    return this._onError;
+  }
+
+  set onError(fn: (error: Error) => void) {
+    this._onError = (error: Error) => {
+      this.error = error;
+      fn(error);
+    };
+  }
+
+  private _onLoad: () => void = () => {
+    doGif(this.gif_data);
+  };
+
+  get onLoad() {
+    return this._onLoad;
+  }
+
+  set onLoad(fn: () => void) {
+    this._onLoad = () => {
+      doGif(this.gif_data);
+      fn();
+    };
+  }
+
+  private _onLoadStart: () => void = () => {
+    download(this._url)
+      .then(data => {
+        this.gif_data = data;
+        this._onLoad();
+      })
+      .catch(this.onError);
+  };
+
+  get onLoadStart() {
+    return this._onLoadStart;
+  }
+
+  set onLoadStart(fn: () => void) {
+    this._onLoadStart = () => {
+      download(this._url)
+        .then(data => {
+          this.gif_data = data;
+          this._onLoad();
+          fn();
+        })
+        .catch(this.onError);
+    };
+  }
+
+  constructor(url: string) {
+    this._url = url;
+
+    this.isGif();
+  }
+
+  private isGif() {
+    if (!this._url) {
+      this.onError(COULDNT_FETCH_RESOURCE);
+      return;
+    }
+    const gifRequest = new XMLHttpRequest();
+    gifRequest.open('GET', this._url);
+    gifRequest.setRequestHeader('Range', 'bytes=0-5');
+    gifRequest.onload = () => {
+      const validHeaders = ['GIF87a', 'GIF89a'];
+      if (validHeaders.includes(gifRequest.responseText.substring(0, 6))) {
+        this._onLoadStart();
+      } else {
+        this.onError(NOT_SUPPORTED);
+      }
+    };
+    gifRequest.onerror = () => {
+      this.onError(COULDNT_FETCH_RESOURCE);
+    };
+    gifRequest.send(null);
+  }
+}

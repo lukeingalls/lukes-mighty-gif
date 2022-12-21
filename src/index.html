@@ -11,4 +11,10 @@
   <body>
     <lukes-mighty-gif src="http://localhost:8080/soccer-gif" />
   </body>
+  <script>
+    const gif = document.querySelector('lukes-mighty-gif');
+    gif.addEventListener('onloadstart', () => console.log('loadstart'));
+    gif.addEventListener('onload', () => console.log('load'));
+    gif.addEventListener('onerror', () => console.log('error'));
+  </script>
 </html>

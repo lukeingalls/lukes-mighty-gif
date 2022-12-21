@@ -1,7 +1,5 @@
-import { Component, Host, h, Prop, Watch, State } from '@stencil/core';
-import { doGif } from '../helpers';
-import download from './lib/download';
-import isUrlGif from './lib/isUrlGif';
+import { Component, Host, h, Prop, Watch, Event, EventEmitter } from '@stencil/core';
+import Gif from '../helpers';
 
 @Component({
   tag: 'lukes-mighty-gif',
@@ -10,9 +8,13 @@ import isUrlGif from './lib/isUrlGif';
   shadow: false,
 })
 export class LukesMightyGif {
+  gif: Gif;
+
   @Prop() src: string;
 
-  @State() gif: ArrayBuffer;
+  @Event({ eventName: 'onloadstart' }) loadstart: EventEmitter;
+  @Event({ eventName: 'onload' }) load: EventEmitter;
+  @Event({ eventName: 'onerror' }) error: EventEmitter<Error>;
 
   componentDidLoad() {
     if (this.src) {
@@ -27,24 +29,10 @@ export class LukesMightyGif {
     }
   }
   handleSrcChange() {
-    isUrlGif(this.src).then(result => {
-      if (result.type === 'gif') {
-        download(result.url)
-          .then(gif => {
-            this.gif = gif;
-          })
-          .catch(this.handleError);
-        return;
-      }
-      this.handleError(result.reason);
-    });
-  }
-
-  @Watch('gif')
-  gifChanged(newGif, oldGif) {
-    if (newGif && newGif !== oldGif) {
-      doGif(newGif);
-    }
+    this.gif = new Gif(this.src);
+    this.gif.onLoad = () => this.load.emit();
+    this.gif.onLoadStart = () => this.loadstart.emit();
+    this.gif.onError = (error: Error) => this.error.emit(error);
   }
 
   handleError(error) {
