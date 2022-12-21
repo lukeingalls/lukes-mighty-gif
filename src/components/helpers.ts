@@ -5,7 +5,7 @@ import { bits, concat } from './utils';
 
 const chainPromises = [(x, y) => x.then(y), Promise.resolve()];
 
-const doGif = (gif: ArrayBuffer) => {
+const doGif = (gif: ArrayBuffer, { ctx, canvas }: { ctx: CanvasRenderingContext2D; canvas: HTMLCanvasElement }) => {
   const dom = {
     errorMessage: document.querySelector('#error-message'),
     filler: document.querySelector('#scrubber-bar-filler') as HTMLDivElement,
@@ -15,15 +15,9 @@ const doGif = (gif: ArrayBuffer) => {
     spacer: document.querySelector('#bubble-spacer'),
   };
 
-  const canvas = {
-    display: document.querySelector('#canvas-display') as HTMLCanvasElement,
-    render: document.querySelector('#canvas-render') as HTMLCanvasElement,
-  };
+  const display_canvas = document.querySelector('#canvas-display') as HTMLCanvasElement;
 
-  const context = {
-    display: canvas.display.getContext('2d'),
-    render: canvas.render.getContext('2d'),
-  };
+  const display_ctx = display_canvas.getContext('2d');
 
   // Validate URL
   // ============
@@ -41,7 +35,7 @@ const doGif = (gif: ArrayBuffer) => {
   function init() {
     // Clean up any previous scrubbing
     if (!isEmpty(state)) {
-      context.display.clearRect(0, 0, state.width, state.height);
+      display_ctx.clearRect(0, 0, state.width, state.height);
     }
 
     state = {
@@ -81,8 +75,8 @@ const doGif = (gif: ArrayBuffer) => {
     // Image dimensions
     const dimensions = new Uint16Array(buffer, 6, 2);
     [state.width, state.height] = dimensions;
-    canvas.render.width = canvas.display.width = state.width;
-    canvas.render.height = canvas.display.height = state.height;
+    canvas.width = display_canvas.width = state.width;
+    canvas.height = display_canvas.height = state.height;
     dom.bar.style.width = dom.line.style.width = state.barWidth = `${Math.max(state.width, 450)}px`;
     const content = document.querySelector('#content') as HTMLDivElement;
     content.style.width = state.barWidth;
@@ -131,15 +125,15 @@ const doGif = (gif: ArrayBuffer) => {
     // Draw current frame only if it's already rendered
     if (frame.isRendered || state.debug.showRawFrames) {
       if (state.hasTransparency) {
-        context.display.clearRect(0, 0, state.width, state.height);
+        display_ctx.clearRect(0, 0, state.width, state.height);
       }
-      return drawFrame(frame, context.display);
+      return drawFrame(frame, display_ctx);
     }
 
     // Rendering not complete. Draw all frames since latest key frame as well
     const first = Math.max(0, frameNumber - (frameNumber % state.keyFrameRate));
     for (let i = first; i <= frameNumber; i++) {
-      renderFrame(state.frames[i], context.display);
+      renderFrame(state.frames[i], display_ctx);
     }
   }
 
@@ -272,13 +266,13 @@ const doGif = (gif: ArrayBuffer) => {
   // =================
 
   function renderAndSave(frame) {
-    renderFrame(frame, context.render);
+    renderFrame(frame, ctx);
     if (frame.isRendered || !frame.isKeyFrame) {
       frame.isKeyFrame = true;
       return Promise.resolve();
     }
     return new Promise(function (resolve, _reject) {
-      frame.putable = context.render.getImageData(0, 0, state.width, state.height);
+      frame.putable = ctx.getImageData(0, 0, state.width, state.height);
       frame.blob = null;
       frame.drawable = null;
       frame.isRendered = true;
@@ -330,10 +324,13 @@ const doGif = (gif: ArrayBuffer) => {
 
 const COULDNT_FETCH_RESOURCE = new Error('Could not fetch resource');
 const NOT_SUPPORTED = new Error('Not supported');
+const NOT_READY = new Error('Not ready');
 
 export default class Gif {
   private _url: string;
   private gif_data: ArrayBuffer;
+  private render_canvas: HTMLCanvasElement;
+  private render_canvas_ctx: CanvasRenderingContext2D;
 
   public error: Error;
 
@@ -357,7 +354,7 @@ export default class Gif {
   }
 
   private _onLoad: () => void = () => {
-    doGif(this.gif_data);
+    doGif(this.gif_data, { ctx: this.render_canvas_ctx, canvas: this.render_canvas });
   };
 
   get onLoad() {
@@ -366,7 +363,7 @@ export default class Gif {
 
   set onLoad(fn: () => void) {
     this._onLoad = () => {
-      doGif(this.gif_data);
+      doGif(this.gif_data, { ctx: this.render_canvas_ctx, canvas: this.render_canvas });
       fn();
     };
   }
@@ -398,7 +395,21 @@ export default class Gif {
 
   constructor(url: string) {
     this._url = url;
+    this.render_canvas = document.createElement('canvas');
+    this.render_canvas_ctx = this.render_canvas.getContext('2d', { willReadFrequently: true });
 
+    const render_canvas_mount_point = document.getElementById('render-canvas-mount-point');
+
+    if (!render_canvas_mount_point) {
+      this.onError(NOT_READY);
+      return;
+    }
+    if (!this.render_canvas_ctx) {
+      this.onError(NOT_READY);
+      return;
+    }
+
+    render_canvas_mount_point.appendChild(this.render_canvas);
     this.isGif();
   }
 

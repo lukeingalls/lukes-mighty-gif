@@ -48,7 +48,6 @@ export class LukesMightyGif {
           <div id="bubble-spacer" class="displayed">
             <div id="image-holder" class="cf">
               <canvas id="canvas-display"></canvas>
-              <canvas id="canvas-render" style={{ display: 'none' }}></canvas>
             </div>
 
             <div id="scrubber-bar">
@@ -58,6 +57,7 @@ export class LukesMightyGif {
             </div>
           </div>
         </div>
+        <div id="render-canvas-mount-point" class="sr-only" />
         <div id="error-message" style={{ color: 'red' }} />
       </Host>
     );
