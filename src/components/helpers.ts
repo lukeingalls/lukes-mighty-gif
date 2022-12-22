@@ -21,7 +21,6 @@ const doGif = (
   },
 ) => {
   const dom = {
-    errorMessage: document.querySelector('#error-message'),
     bar: document.querySelector('#scrubber-bar') as HTMLDivElement,
   };
 
