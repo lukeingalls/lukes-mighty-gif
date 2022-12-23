@@ -78,7 +78,7 @@ export class LukesMightyGif {
         <div>
           <canvas id="canvas-display"></canvas>
 
-          <div id="scrubber-bar" class="progress-bar">
+          <div id="scrubber-bar" style={{ width: `${this.width}px` }} class="progress-bar">
             <div class="progress-bar__filler" style={{ width: `${(100 * this.currentTime) / this.duration}%` }} />
           </div>
         </div>

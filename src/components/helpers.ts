@@ -208,10 +208,6 @@ export default class Gif {
   }
 
   private doGif() {
-    const dom = {
-      bar: document.querySelector('#scrubber-bar') as HTMLDivElement,
-    };
-
     const display_canvas = document.querySelector('#canvas-display') as HTMLCanvasElement;
 
     const display_ctx = display_canvas.getContext('2d');
@@ -437,7 +433,6 @@ export default class Gif {
 
       this.render_canvas.width = display_canvas.width = this.width;
       this.render_canvas.height = display_canvas.height = this.height;
-      dom.bar.style.width = `${this.width}px`;
 
       // Record global color table
       let pos = 13 + Gif.colorTableSize(bytes[10]);
