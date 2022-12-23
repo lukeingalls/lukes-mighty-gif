@@ -2,18 +2,44 @@ import clamp from 'lodash.clamp';
 import download from './lukes-mighty-gif/lib/download';
 import { bits, concat } from './utils';
 
-const chainPromises = [(x, y) => x.then(y), Promise.resolve()] as const;
+const chainPromises = [(x: any, y: any) => x.then(y), Promise.resolve()] as const;
 
 const COULDNT_FETCH_RESOURCE = new Error('Could not fetch resource');
 const COULDNT_DECODE_GIF = new Error('Could not decode GIF');
 const NOT_READY = new Error('Not ready');
 const NOT_SUPPORTED = new Error('Not supported');
 
+type Frame = {
+  pos: {
+    x: number;
+    y: number;
+  };
+  size: {
+    w: number;
+    h: number;
+  };
+  disposalMethod: number;
+  isRendered: boolean;
+  drawable?: ImageBitmap;
+  blob?: ImageBitmapSource;
+  delayTime: number;
+  backup?: ImageData;
+  putable?: ImageData;
+  number: number;
+  isKeyFrame: boolean;
+  transparent: boolean;
+};
+
 export default class Gif {
   private _url: string;
   private gif_data: ArrayBuffer;
   private render_canvas: HTMLCanvasElement;
   private render_canvas_ctx: CanvasRenderingContext2D;
+
+  private _frames: Array<Frame>;
+  get frames() {
+    return this._frames;
+  }
 
   public error: Error;
 
@@ -154,24 +180,21 @@ export default class Gif {
       currentFrame: 0,
       hasTransparency: false,
       keyFrameRate: 15, // Performance: Pre-render every n frames
-      frame() {
-        return this.frames[this.currentFrame];
-      },
-      frameDelay() {
-        return this.frame().delayTime / Math.abs(this.speed);
-      },
-      frames: [] as any[],
-      playTimeoutId: null,
+      playTimeoutId: null as number | null,
       speed: 1,
       height: 1,
       width: 1,
       firstFrameChecked: false,
     };
 
+    const frameDelay = (() => {
+      return this.frames[state.currentFrame].delayTime / Math.abs(state.speed);
+    }).bind(this);
+
     // GIF parsing
     // ===========
 
-    const parseFrames = ((buffer, pos, gct, keyFrameRate) => {
+    const parseFrames = ((buffer: ArrayBuffer, pos: number, gct: Uint8Array, keyFrameRate: number) => {
       const bytes = new Uint8Array(buffer);
       const trailer = new Uint8Array([0x3b]);
       const frames = [];
@@ -219,7 +242,7 @@ export default class Gif {
           case 0x2c: {
             // `New image frame at ${pos}`
             const [x, y, w, h] = new Uint16Array(buffer.slice(pos + 1, pos + 9));
-            const frame = {
+            const frame: Frame = {
               disposalMethod: gce.disposalMethod,
               delayTime: gce.delayTime < 2 ? 100 : gce.delayTime * 10,
               isKeyFrame: frames.length % keyFrameRate === 0 && !!frames.length,
@@ -273,7 +296,7 @@ export default class Gif {
     // Drawing to canvas
     // =================
 
-    const renderAndSave = (frame => {
+    const renderAndSave = ((frame: Frame) => {
       const { render_canvas_ctx } = this;
       renderFrame(frame, render_canvas_ctx);
       if (frame.isRendered || !frame.isKeyFrame) {
@@ -285,17 +308,17 @@ export default class Gif {
         frame.blob = null;
         frame.drawable = null;
         frame.isRendered = true;
-        const c = (frame.canvas = document.createElement('canvas'));
+        const c = document.createElement('canvas');
         [c.width, c.height] = [state.width, state.height];
         c.getContext('2d').putImageData(frame.putable, 0, 0);
         setTimeout(resolve, 0);
       });
     }).bind(this);
 
-    const renderFrame = ((frame, ctx) => {
+    const renderFrame = ((frame: Frame, ctx: CanvasRenderingContext2D) => {
       const [_xy, _wh, method] = [frame.pos, frame.size, frame.disposalMethod];
-      const full = [0, 0, state.width, state.height];
-      const prevFrame = state.frames[frame.number - 2];
+      const full = [0, 0, state.width, state.height] as const;
+      const prevFrame = this.frames[frame.number - 2];
 
       if (!prevFrame) {
         ctx.clearRect(...full); // First frame, wipe the canvas clean
@@ -326,7 +349,7 @@ export default class Gif {
     }).bind(this);
 
     const renderKeyFrames = (() => {
-      return state.frames
+      return this.frames
         .map(frame => () => {
           return createImageBitmap(frame.blob)
             .then(bitmap => {
@@ -339,7 +362,7 @@ export default class Gif {
     }).bind(this);
 
     const renderIntermediateFrames = (() => {
-      return state.frames.map(frame => () => renderAndSave(frame)).reduce(...chainPromises);
+      return this.frames.map(frame => () => renderAndSave(frame)).reduce(...chainPromises);
     }).bind(this);
 
     const advanceFrame = (() => {
@@ -347,8 +370,8 @@ export default class Gif {
       frameNumber += state.speed > 0 ? 1 : -1;
 
       const loopBackward = frameNumber < 0;
-      const loopForward = frameNumber >= state.frames.length;
-      const lastFrame = state.frames.length - 1;
+      const loopForward = frameNumber >= this.frames.length;
+      const lastFrame = this.frames.length - 1;
 
       if (loopBackward || loopForward) {
         frameNumber = loopForward ? 0 : lastFrame;
@@ -356,7 +379,7 @@ export default class Gif {
 
       showFrame(frameNumber);
 
-      state.playTimeoutId = setTimeout(advanceFrame, state.frameDelay());
+      state.playTimeoutId = window.setTimeout(advanceFrame, frameDelay());
     }).bind(this);
 
     // Initialize player
@@ -376,12 +399,12 @@ export default class Gif {
       let pos = 13 + Gif.colorTableSize(bytes[10]);
       const gct = bytes.subarray(13, pos);
 
-      state.frames = parseFrames(this.gif_data, pos, gct, state.keyFrameRate);
+      this._frames = parseFrames(this.gif_data, pos, gct, state.keyFrameRate);
 
       return renderKeyFrames()
         .then(renderIntermediateFrames)
         .then(advanceFrame)
-        .catch(err => console.error('Rendering GIF failed!', err));
+        .catch((err: any) => console.error('Rendering GIF failed!', err));
     }).bind(this);
 
     // Download GIF
@@ -389,11 +412,11 @@ export default class Gif {
 
     handleGIF(this.gif_data);
 
-    const showFrame = (frameNumber => {
-      const lastFrame = state.frames.length - 1;
+    const showFrame = ((frameNumber: number) => {
+      const lastFrame = this.frames.length - 1;
       frameNumber = clamp(frameNumber, 0, lastFrame);
-      const currentTime = state.frames.slice(0, frameNumber + 1).reduce((sum, frame) => sum + frame.delayTime, 0);
-      const frame = state.frames[(state.currentFrame = frameNumber)];
+      const currentTime = this.frames.slice(0, frameNumber + 1).reduce((sum, frame) => sum + frame.delayTime, 0);
+      const frame = this.frames[(state.currentFrame = frameNumber)];
 
       this.onProgress(currentTime);
 
@@ -408,17 +431,17 @@ export default class Gif {
       // Rendering not complete. Draw all frames since latest key frame as well
       const first = Math.max(0, frameNumber - (frameNumber % state.keyFrameRate));
       for (let i = first; i <= frameNumber; i++) {
-        renderFrame(state.frames[i], display_ctx);
+        renderFrame(this.frames[i], display_ctx);
       }
     }).bind(this);
 
-    const drawFrame = ((frame, ctx) => {
+    const drawFrame = ((frame: Frame, ctx: CanvasRenderingContext2D) => {
       if (frame.drawable) ctx.drawImage(frame.drawable, 0, 0, state.width, state.height);
       else ctx.putImageData(frame.putable, 0, 0);
     }).bind(this);
   }
 
-  private static colorTableSize(packedHeader) {
+  private static colorTableSize(packedHeader: number) {
     const tableFlag = bits(packedHeader, 0, 1);
     if (tableFlag !== 1) return 0;
     const size = bits(packedHeader, 5, 3);

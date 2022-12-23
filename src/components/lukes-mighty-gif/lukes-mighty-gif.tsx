@@ -28,7 +28,8 @@ export class LukesMightyGif {
   }
 
   @Watch('src')
-  srcChanged(newSrc, oldSrc) {
+  srcChanged(newSrc: any, oldSrc: any) {
+    if (typeof newSrc !== 'string') return;
     if (newSrc && newSrc !== oldSrc) {
       this.handleSrcChange();
     }
@@ -51,7 +52,7 @@ export class LukesMightyGif {
     };
   }
 
-  handleError(error) {
+  handleError(error: any) {
     console.error(error);
   }
 
