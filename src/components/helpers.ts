@@ -36,9 +36,28 @@ export default class Gif {
   private render_canvas: HTMLCanvasElement;
   private render_canvas_ctx: CanvasRenderingContext2D;
 
+  // =====================
+  // READ-ONLY PROPERTIES
+  // =====================
+
   private _frames: Array<Frame>;
   get frames() {
     return this._frames;
+  }
+
+  private _width: number;
+  get width() {
+    return this._width;
+  }
+
+  private _height: number;
+  get height() {
+    return this._height;
+  }
+
+  private _duration: number;
+  get duration() {
+    return this._duration;
   }
 
   public error: Error;
@@ -182,8 +201,6 @@ export default class Gif {
       keyFrameRate: 15, // Performance: Pre-render every n frames
       playTimeoutId: null as number | null,
       speed: 1,
-      height: 1,
-      width: 1,
       firstFrameChecked: false,
     };
 
@@ -297,19 +314,20 @@ export default class Gif {
     // =================
 
     const renderAndSave = ((frame: Frame) => {
-      const { render_canvas_ctx } = this;
+      const { render_canvas_ctx, width, height } = this;
       renderFrame(frame, render_canvas_ctx);
       if (frame.isRendered || !frame.isKeyFrame) {
         frame.isKeyFrame = true;
         return Promise.resolve();
       }
       return new Promise(function (resolve, _reject) {
-        frame.putable = render_canvas_ctx.getImageData(0, 0, state.width, state.height);
+        frame.putable = render_canvas_ctx.getImageData(0, 0, width, height);
         frame.blob = null;
         frame.drawable = null;
         frame.isRendered = true;
         const c = document.createElement('canvas');
-        [c.width, c.height] = [state.width, state.height];
+        c.width = width;
+        c.height = height;
         c.getContext('2d').putImageData(frame.putable, 0, 0);
         setTimeout(resolve, 0);
       });
@@ -317,7 +335,7 @@ export default class Gif {
 
     const renderFrame = ((frame: Frame, ctx: CanvasRenderingContext2D) => {
       const [_xy, _wh, method] = [frame.pos, frame.size, frame.disposalMethod];
-      const full = [0, 0, state.width, state.height] as const;
+      const full = [0, 0, this.width, this.height] as const;
       const prevFrame = this.frames[frame.number - 2];
 
       if (!prevFrame) {
@@ -337,7 +355,7 @@ export default class Gif {
       // Check first frame for transparency
       if (!prevFrame && !state.hasTransparency && !state.firstFrameChecked) {
         state.firstFrameChecked = true;
-        const data = ctx.getImageData(0, 0, state.width, state.height).data;
+        const data = ctx.getImageData(0, 0, this.width, this.height).data;
         for (let i = 0, l = data.length; i < l; i += 4) {
           if (data[i + 3] === 0) {
             // Check alpha of each pixel in frame 0
@@ -390,10 +408,13 @@ export default class Gif {
 
       // Image dimensions
       const dimensions = new Uint16Array(this.gif_data, 6, 2);
-      [state.width, state.height] = dimensions;
-      this.render_canvas.width = display_canvas.width = state.width;
-      this.render_canvas.height = display_canvas.height = state.height;
-      dom.bar.style.width = `${state.width}px`;
+      const [width, height] = dimensions;
+      this._width = width;
+      this._height = height;
+
+      this.render_canvas.width = display_canvas.width = this.width;
+      this.render_canvas.height = display_canvas.height = this.height;
+      dom.bar.style.width = `${this.width}px`;
 
       // Record global color table
       let pos = 13 + Gif.colorTableSize(bytes[10]);
@@ -423,7 +444,7 @@ export default class Gif {
       // Draw current frame only if it's already rendered
       if (frame.isRendered) {
         if (state.hasTransparency) {
-          display_ctx.clearRect(0, 0, state.width, state.height);
+          display_ctx.clearRect(0, 0, this.width, this.height);
         }
         return drawFrame(frame, display_ctx);
       }
@@ -436,7 +457,7 @@ export default class Gif {
     }).bind(this);
 
     const drawFrame = ((frame: Frame, ctx: CanvasRenderingContext2D) => {
-      if (frame.drawable) ctx.drawImage(frame.drawable, 0, 0, state.width, state.height);
+      if (frame.drawable) ctx.drawImage(frame.drawable, 0, 0, this.width, this.height);
       else ctx.putImageData(frame.putable, 0, 0);
     }).bind(this);
   }
