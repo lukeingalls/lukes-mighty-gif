@@ -110,7 +110,7 @@ export default class Gif {
   }
 
   private _onLoad: () => void = () => {
-    this.doGif();
+    this.handleGIF();
   };
 
   get onLoad() {
@@ -119,7 +119,7 @@ export default class Gif {
 
   set onLoad(fn: () => void) {
     this._onLoad = () => {
-      this.doGif();
+      this.handleGIF();
       fn();
     };
   }
@@ -228,166 +228,156 @@ export default class Gif {
     gifRequest.send(null);
   }
 
-  private doGif() {
-    // Validate URL
-    // ============
+  private frameDelay() {
+    return this.frames[this.currentFrame].delayTime / Math.abs(this.speed);
+  }
 
-    const frameDelay = (() => {
-      return this.frames[this.currentFrame].delayTime / Math.abs(this.speed);
-    }).bind(this);
+  private renderAndSave(frame: Frame) {
+    const { render_canvas_ctx, width, height } = this;
+    this.renderFrame(frame, render_canvas_ctx);
+    if (frame.isRendered || !frame.isKeyFrame) {
+      frame.isKeyFrame = true;
+      return Promise.resolve();
+    }
+    return new Promise(function (resolve, _reject) {
+      frame.putable = render_canvas_ctx.getImageData(0, 0, width, height);
+      frame.blob = null;
+      frame.drawable = null;
+      frame.isRendered = true;
+      const c = document.createElement('canvas');
+      c.width = width;
+      c.height = height;
+      c.getContext('2d').putImageData(frame.putable, 0, 0);
+      setTimeout(resolve, 0);
+    });
+  }
 
-    // GIF parsing
-    // ===========
+  private renderFrame(frame: Frame, ctx: CanvasRenderingContext2D) {
+    const [_xy, _wh, method] = [frame.pos, frame.size, frame.disposalMethod];
+    const full = [0, 0, this.width, this.height] as const;
+    const prevFrame = this.frames[frame.number - 2];
 
-    // Drawing to canvas
-    // =================
+    if (!prevFrame) {
+      ctx.clearRect(...full); // First frame, wipe the canvas clean
+    } else {
+      // Disposal method 0 or 1: draw image only
+      // Disposal method 2: draw image then erase portion just drawn
+      // Disposal method 3: draw image then revert to previous frame
+      const [{ x, y }, { w, h }, method] = [prevFrame.pos, prevFrame.size, prevFrame.disposalMethod];
+      if (method === 2) ctx.clearRect(x, y, w, h);
+      if (method === 3) ctx.putImageData(prevFrame.backup, 0, 0);
+    }
 
-    const renderAndSave = ((frame: Frame) => {
-      const { render_canvas_ctx, width, height } = this;
-      renderFrame(frame, render_canvas_ctx);
-      if (frame.isRendered || !frame.isKeyFrame) {
-        frame.isKeyFrame = true;
-        return Promise.resolve();
-      }
-      return new Promise(function (resolve, _reject) {
-        frame.putable = render_canvas_ctx.getImageData(0, 0, width, height);
-        frame.blob = null;
-        frame.drawable = null;
-        frame.isRendered = true;
-        const c = document.createElement('canvas');
-        c.width = width;
-        c.height = height;
-        c.getContext('2d').putImageData(frame.putable, 0, 0);
-        setTimeout(resolve, 0);
-      });
-    }).bind(this);
+    frame.backup = method === 3 ? ctx.getImageData(...full) : null;
+    this.drawFrame(frame, ctx);
 
-    const renderFrame = ((frame: Frame, ctx: CanvasRenderingContext2D) => {
-      const [_xy, _wh, method] = [frame.pos, frame.size, frame.disposalMethod];
-      const full = [0, 0, this.width, this.height] as const;
-      const prevFrame = this.frames[frame.number - 2];
-
-      if (!prevFrame) {
-        ctx.clearRect(...full); // First frame, wipe the canvas clean
-      } else {
-        // Disposal method 0 or 1: draw image only
-        // Disposal method 2: draw image then erase portion just drawn
-        // Disposal method 3: draw image then revert to previous frame
-        const [{ x, y }, { w, h }, method] = [prevFrame.pos, prevFrame.size, prevFrame.disposalMethod];
-        if (method === 2) ctx.clearRect(x, y, w, h);
-        if (method === 3) ctx.putImageData(prevFrame.backup, 0, 0);
-      }
-
-      frame.backup = method === 3 ? ctx.getImageData(...full) : null;
-      drawFrame(frame, ctx);
-
-      // Check first frame for transparency
-      if (!prevFrame && !this.hasTransparency && !this.firstFrameChecked) {
-        this.firstFrameChecked = true;
-        const data = ctx.getImageData(0, 0, this.width, this.height).data;
-        for (let i = 0, l = data.length; i < l; i += 4) {
-          if (data[i + 3] === 0) {
-            // Check alpha of each pixel in frame 0
-            this.hasTransparency = true;
-            break;
-          }
+    // Check first frame for transparency
+    if (!prevFrame && !this.hasTransparency && !this.firstFrameChecked) {
+      this.firstFrameChecked = true;
+      const data = ctx.getImageData(0, 0, this.width, this.height).data;
+      for (let i = 0, l = data.length; i < l; i += 4) {
+        if (data[i + 3] === 0) {
+          // Check alpha of each pixel in frame 0
+          this.hasTransparency = true;
+          break;
         }
       }
-    }).bind(this);
+    }
+  }
 
-    const renderKeyFrames = (() => {
-      return this.frames
-        .map(frame => () => {
-          return createImageBitmap(frame.blob)
-            .then(bitmap => {
-              frame.drawable = bitmap;
-              return frame;
-            })
-            .then(renderAndSave);
-        })
-        .reduce(...chainPromises);
-    }).bind(this);
+  private renderKeyFrames() {
+    return this.frames
+      .map(frame => () => {
+        return createImageBitmap(frame.blob)
+          .then(bitmap => {
+            frame.drawable = bitmap;
+            return frame;
+          })
+          .then(frame => this.renderAndSave(frame));
+      })
+      .reduce(...chainPromises);
+  }
 
-    const renderIntermediateFrames = (() => {
-      return this.frames.map(frame => () => renderAndSave(frame)).reduce(...chainPromises);
-    }).bind(this);
+  private renderIntermediateFrames() {
+    return this.frames.map(frame => () => this.renderAndSave(frame)).reduce(...chainPromises);
+  }
 
-    const advanceFrame = (() => {
-      let frameNumber = this.currentFrame;
-      frameNumber += this.speed > 0 ? 1 : -1;
+  private advanceFrame() {
+    let frameNumber = this.currentFrame;
+    frameNumber += this.speed > 0 ? 1 : -1;
 
-      const loopBackward = frameNumber < 0;
-      const loopForward = frameNumber >= this.frames.length;
-      const lastFrame = this.frames.length - 1;
+    const loopBackward = frameNumber < 0;
+    const loopForward = frameNumber >= this.frames.length;
+    const lastFrame = this.frames.length - 1;
 
-      if (loopBackward || loopForward) {
-        frameNumber = loopForward ? 0 : lastFrame;
+    if (loopBackward || loopForward) {
+      frameNumber = loopForward ? 0 : lastFrame;
+    }
+
+    this.showFrame(frameNumber);
+
+    this.playTimeoutId = window.setTimeout(() => this.advanceFrame(), this.frameDelay());
+  }
+
+  // Initialize player
+  // =================
+
+  handleGIF() {
+    const bytes = new Uint8Array(this.gif_data);
+
+    // Image dimensions
+    const dimensions = new Uint16Array(this.gif_data, 6, 2);
+    const [width, height] = dimensions;
+    this.setMetadata({ width, height });
+
+    this.render_canvas.width = this.width;
+    this.render_canvas.height = this.height;
+
+    // Record global color table
+    let pos = 13 + Gif.colorTableSize(bytes[10]);
+    const gct = bytes.subarray(13, pos);
+
+    this._frames = this.parseFrames(this.gif_data, pos, gct, this.keyFrameRate);
+
+    return this.renderKeyFrames()
+      .then(() => this.renderIntermediateFrames())
+      .then(() => this.advanceFrame())
+      .catch((err: any) => console.error('Rendering GIF failed!', err));
+  }
+
+  // Download GIF
+  // ============
+
+  private showFrame(frameNumber: number) {
+    const lastFrame = this.frames.length - 1;
+    frameNumber = clamp(frameNumber, 0, lastFrame);
+    const currentTime = this.frames.slice(0, frameNumber + 1).reduce((sum, frame) => sum + frame.delayTime, 0);
+    this.currentFrame = frameNumber;
+    const frame = this.frames[this.currentFrame];
+
+    this.onProgress(currentTime);
+
+    // Draw current frame only if it's already rendered
+    if (frame.isRendered) {
+      if (this.hasTransparency) {
+        this.display_ctx.clearRect(0, 0, this.width, this.height);
       }
+      return this.drawFrame(frame, this.display_ctx);
+    }
 
-      showFrame(frameNumber);
+    // Rendering not complete. Draw all frames since latest key frame as well
+    const first = Math.max(0, frameNumber - (frameNumber % this.keyFrameRate));
+    for (let i = first; i <= frameNumber; i++) {
+      this.renderFrame(this.frames[i], this.display_ctx);
+    }
+  }
 
-      this.playTimeoutId = window.setTimeout(advanceFrame, frameDelay());
-    }).bind(this);
-
-    // Initialize player
-    // =================
-
-    const handleGIF = (() => {
-      const bytes = new Uint8Array(this.gif_data);
-
-      // Image dimensions
-      const dimensions = new Uint16Array(this.gif_data, 6, 2);
-      const [width, height] = dimensions;
-      this.setMetadata({ width, height });
-
-      this.render_canvas.width = this.width;
-      this.render_canvas.height = this.height;
-
-      // Record global color table
-      let pos = 13 + Gif.colorTableSize(bytes[10]);
-      const gct = bytes.subarray(13, pos);
-
-      this._frames = this.parseFrames(this.gif_data, pos, gct, this.keyFrameRate);
-
-      return renderKeyFrames()
-        .then(renderIntermediateFrames)
-        .then(advanceFrame)
-        .catch((err: any) => console.error('Rendering GIF failed!', err));
-    }).bind(this);
-
-    // Download GIF
-    // ============
-
-    handleGIF(this.gif_data);
-
-    const showFrame = ((frameNumber: number) => {
-      const lastFrame = this.frames.length - 1;
-      frameNumber = clamp(frameNumber, 0, lastFrame);
-      const currentTime = this.frames.slice(0, frameNumber + 1).reduce((sum, frame) => sum + frame.delayTime, 0);
-      this.currentFrame = frameNumber;
-      const frame = this.frames[this.currentFrame];
-
-      this.onProgress(currentTime);
-
-      // Draw current frame only if it's already rendered
-      if (frame.isRendered) {
-        if (this.hasTransparency) {
-          this.display_ctx.clearRect(0, 0, this.width, this.height);
-        }
-        return drawFrame(frame, this.display_ctx);
-      }
-
-      // Rendering not complete. Draw all frames since latest key frame as well
-      const first = Math.max(0, frameNumber - (frameNumber % this.keyFrameRate));
-      for (let i = first; i <= frameNumber; i++) {
-        renderFrame(this.frames[i], this.display_ctx);
-      }
-    }).bind(this);
-
-    const drawFrame = ((frame: Frame, ctx: CanvasRenderingContext2D) => {
-      if (frame.drawable) ctx.drawImage(frame.drawable, 0, 0, this.width, this.height);
-      else ctx.putImageData(frame.putable, 0, 0);
-    }).bind(this);
+  private drawFrame(frame: Frame, ctx: CanvasRenderingContext2D) {
+    if (frame.drawable) {
+      ctx.drawImage(frame.drawable, 0, 0, this.width, this.height);
+    } else {
+      ctx.putImageData(frame.putable, 0, 0);
+    }
   }
 
   private parseFrames(buffer: ArrayBuffer, pos: number, gct: Uint8Array, keyFrameRate: number) {
