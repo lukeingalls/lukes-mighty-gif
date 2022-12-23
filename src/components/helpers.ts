@@ -251,29 +251,29 @@ export default class Gif {
       });
     }).bind(this);
 
-    const renderFrame = ((frame: Frame, ctx: CanvasRenderingContext2D) => {
+    const renderFrame = ((frame: Frame) => {
       const [_xy, _wh, method] = [frame.pos, frame.size, frame.disposalMethod];
       const full = [0, 0, this.width, this.height] as const;
       const prevFrame = this.frames[frame.number - 2];
 
       if (!prevFrame) {
-        ctx.clearRect(...full); // First frame, wipe the canvas clean
+        display_ctx.clearRect(...full); // First frame, wipe the canvas clean
       } else {
         // Disposal method 0 or 1: draw image only
         // Disposal method 2: draw image then erase portion just drawn
         // Disposal method 3: draw image then revert to previous frame
         const [{ x, y }, { w, h }, method] = [prevFrame.pos, prevFrame.size, prevFrame.disposalMethod];
-        if (method === 2) ctx.clearRect(x, y, w, h);
-        if (method === 3) ctx.putImageData(prevFrame.backup, 0, 0);
+        if (method === 2) display_ctx.clearRect(x, y, w, h);
+        if (method === 3) display_ctx.putImageData(prevFrame.backup, 0, 0);
       }
 
-      frame.backup = method === 3 ? ctx.getImageData(...full) : null;
-      drawFrame(frame, ctx);
+      frame.backup = method === 3 ? display_ctx.getImageData(...full) : null;
+      drawFrame(frame);
 
       // Check first frame for transparency
       if (!prevFrame && !this.hasTransparency && !this.firstFrameChecked) {
         this.firstFrameChecked = true;
-        const data = ctx.getImageData(0, 0, this.width, this.height).data;
+        const data = display_ctx.getImageData(0, 0, this.width, this.height).data;
         for (let i = 0, l = data.length; i < l; i += 4) {
           if (data[i + 3] === 0) {
             // Check alpha of each pixel in frame 0
@@ -363,7 +363,7 @@ export default class Gif {
         if (this.hasTransparency) {
           display_ctx.clearRect(0, 0, this.width, this.height);
         }
-        return drawFrame(frame, display_ctx);
+        return drawFrame(frame);
       }
 
       // Rendering not complete. Draw all frames since latest key frame as well
@@ -373,9 +373,12 @@ export default class Gif {
       }
     }).bind(this);
 
-    const drawFrame = ((frame: Frame, ctx: CanvasRenderingContext2D) => {
-      if (frame.drawable) ctx.drawImage(frame.drawable, 0, 0, this.width, this.height);
-      else ctx.putImageData(frame.putable, 0, 0);
+    const drawFrame = ((frame: Frame) => {
+      if (frame.drawable) {
+        display_ctx.drawImage(frame.drawable, 0, 0, this.width, this.height);
+      } else {
+        display_ctx.putImageData(frame.putable, 0, 0);
+      }
     }).bind(this);
   }
 
