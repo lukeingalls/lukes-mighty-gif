@@ -35,6 +35,12 @@ export default class Gif {
   private gif_data: ArrayBuffer;
   private render_canvas: HTMLCanvasElement;
   private render_canvas_ctx: CanvasRenderingContext2D;
+  private currentFrame = 0;
+  private hasTransparency = false;
+  private speed = 1;
+  private keyFrameRate = 15; // Performance: Pre-render every n frames
+  private firstFrameChecked = false;
+  private playTimeoutId: number | null = null;
 
   // =====================
   // READ-ONLY PROPERTIES
@@ -215,17 +221,8 @@ export default class Gif {
     // Validate URL
     // ============
 
-    const state = {
-      currentFrame: 0,
-      hasTransparency: false,
-      keyFrameRate: 15, // Performance: Pre-render every n frames
-      playTimeoutId: null as number | null,
-      speed: 1,
-      firstFrameChecked: false,
-    };
-
     const frameDelay = (() => {
-      return this.frames[state.currentFrame].delayTime / Math.abs(state.speed);
+      return this.frames[this.currentFrame].delayTime / Math.abs(this.speed);
     }).bind(this);
 
     // GIF parsing
@@ -294,7 +291,7 @@ export default class Gif {
             // But we assume transparency if using method 2 since the background
             // could show through
             if (frame.disposalMethod === 2) {
-              state.hasTransparency = true;
+              this.hasTransparency = true;
             }
 
             // Skip local color table
@@ -373,13 +370,13 @@ export default class Gif {
       drawFrame(frame, ctx);
 
       // Check first frame for transparency
-      if (!prevFrame && !state.hasTransparency && !state.firstFrameChecked) {
-        state.firstFrameChecked = true;
+      if (!prevFrame && !this.hasTransparency && !this.firstFrameChecked) {
+        this.firstFrameChecked = true;
         const data = ctx.getImageData(0, 0, this.width, this.height).data;
         for (let i = 0, l = data.length; i < l; i += 4) {
           if (data[i + 3] === 0) {
             // Check alpha of each pixel in frame 0
-            state.hasTransparency = true;
+            this.hasTransparency = true;
             break;
           }
         }
@@ -404,8 +401,8 @@ export default class Gif {
     }).bind(this);
 
     const advanceFrame = (() => {
-      let frameNumber = state.currentFrame;
-      frameNumber += state.speed > 0 ? 1 : -1;
+      let frameNumber = this.currentFrame;
+      frameNumber += this.speed > 0 ? 1 : -1;
 
       const loopBackward = frameNumber < 0;
       const loopForward = frameNumber >= this.frames.length;
@@ -417,7 +414,7 @@ export default class Gif {
 
       showFrame(frameNumber);
 
-      state.playTimeoutId = window.setTimeout(advanceFrame, frameDelay());
+      this.playTimeoutId = window.setTimeout(advanceFrame, frameDelay());
     }).bind(this);
 
     // Initialize player
@@ -431,14 +428,14 @@ export default class Gif {
       const [width, height] = dimensions;
       this.setMetadata({ width, height });
 
-      this.render_canvas.width = display_canvas.width = this.width;
-      this.render_canvas.height = display_canvas.height = this.height;
+      this.render_canvas.width = this.width;
+      this.render_canvas.height = this.height;
 
       // Record global color table
       let pos = 13 + Gif.colorTableSize(bytes[10]);
       const gct = bytes.subarray(13, pos);
 
-      this._frames = parseFrames(this.gif_data, pos, gct, state.keyFrameRate);
+      this._frames = parseFrames(this.gif_data, pos, gct, this.keyFrameRate);
 
       return renderKeyFrames()
         .then(renderIntermediateFrames)
@@ -455,20 +452,21 @@ export default class Gif {
       const lastFrame = this.frames.length - 1;
       frameNumber = clamp(frameNumber, 0, lastFrame);
       const currentTime = this.frames.slice(0, frameNumber + 1).reduce((sum, frame) => sum + frame.delayTime, 0);
-      const frame = this.frames[(state.currentFrame = frameNumber)];
+      this.currentFrame = frameNumber;
+      const frame = this.frames[this.currentFrame];
 
       this.onProgress(currentTime);
 
       // Draw current frame only if it's already rendered
       if (frame.isRendered) {
-        if (state.hasTransparency) {
+        if (this.hasTransparency) {
           display_ctx.clearRect(0, 0, this.width, this.height);
         }
         return drawFrame(frame, display_ctx);
       }
 
       // Rendering not complete. Draw all frames since latest key frame as well
-      const first = Math.max(0, frameNumber - (frameNumber % state.keyFrameRate));
+      const first = Math.max(0, frameNumber - (frameNumber % this.keyFrameRate));
       for (let i = first; i <= frameNumber; i++) {
         renderFrame(this.frames[i], display_ctx);
       }
