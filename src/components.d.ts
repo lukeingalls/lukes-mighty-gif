@@ -10,6 +10,7 @@ export namespace Components {
         "currentTime": number;
         "duration": number;
         "height": number;
+        "paused": boolean;
         "src": string;
         /**
           * The next few props are meant to be treated as read-only. I don't know how to make them read-only in Stencil, so this is all you get 🤷‍♂️.
@@ -37,12 +38,15 @@ declare namespace LocalJSX {
         "currentTime"?: number;
         "duration"?: number;
         "height"?: number;
+        "onOncanplay"?: (event: LukesMightyGifCustomEvent<any>) => void;
+        "onOncanplaythrough"?: (event: LukesMightyGifCustomEvent<any>) => void;
         "onOndurationchange"?: (event: LukesMightyGifCustomEvent<any>) => void;
         "onOnerror"?: (event: LukesMightyGifCustomEvent<Error>) => void;
         "onOnload"?: (event: LukesMightyGifCustomEvent<any>) => void;
         "onOnloadedmetadata"?: (event: LukesMightyGifCustomEvent<any>) => void;
         "onOnloadstart"?: (event: LukesMightyGifCustomEvent<any>) => void;
         "onOnprogress"?: (event: LukesMightyGifCustomEvent<any>) => void;
+        "paused"?: boolean;
         "src"?: string;
         /**
           * The next few props are meant to be treated as read-only. I don't know how to make them read-only in Stencil, so this is all you get 🤷‍♂️.

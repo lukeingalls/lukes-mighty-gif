@@ -9,10 +9,25 @@
     <script nomodule src="/build/play-gif.js"></script>
   </head>
   <body>
-    <lukes-mighty-gif src="http://localhost:8080/soccer-gif" />
+    <div style="display: grid; grid-template-columns: auto auto; column-gap: 20px">
+      <div>
+        <h3>Gif rendered with an img tag</h3>
+        <img />
+      </div>
+      <div>
+        <h3>Gif rendered via custom webcomponent</h3>
+        <lukes-mighty-gif />
+      </div>
+    </div>
   </body>
   <script>
+    const src = 'http://localhost:8080/soccer-gif';
+
+    const img = document.querySelector('img');
+    img.src = src;
+
     const gif = document.querySelector('lukes-mighty-gif');
+    gif.src = src;
     gif.addEventListener('onloadstart', () => console.log('loadstart'));
     gif.addEventListener('onload', () => console.log('load'));
     gif.addEventListener('onerror', () => console.log('error'));

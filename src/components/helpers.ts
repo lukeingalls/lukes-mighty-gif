@@ -23,6 +23,11 @@ type Frame = {
   drawable?: ImageBitmap;
   blob?: ImageBitmapSource;
   delayTime: number;
+  /**
+   * Relative to the gif's current time, this is the first
+   * millisecond that this frame should be rendered.
+   */
+  renderAtMs: number;
   backup?: ImageData;
   putable?: ImageData;
   number: number;
@@ -37,12 +42,17 @@ export default class Gif {
   private render_canvas_ctx: CanvasRenderingContext2D;
   private display_canvas: HTMLCanvasElement;
   private display_ctx: CanvasRenderingContext2D;
-  private currentFrame = 0;
   private hasTransparency = false;
   private speed = 1;
   private keyFrameRate = 15; // Performance: Pre-render every n frames
   private firstFrameChecked = false;
   private playTimeoutId: number | null = null;
+
+  private _currentFrame = 0;
+
+  get currentFrame() {
+    return this._currentFrame;
+  }
 
   // =====================
   // READ-ONLY PROPERTIES
@@ -83,6 +93,24 @@ export default class Gif {
   // =====================
   // EVENT LISTENERS
   // =====================
+
+  // These are going to fire together since I decode the entire gif before playing it.
+  private _onCanPlayThrough: () => void = () => {};
+  private _onCanPlay: () => void = () => {};
+
+  get onCanPlayThrough() {
+    return this._onCanPlayThrough;
+  }
+  get onCanPlay() {
+    return this._onCanPlay;
+  }
+
+  set onCanPlayThrough(fn: () => void) {
+    this._onCanPlayThrough = fn;
+  }
+  set onCanPlay(fn: () => void) {
+    this._onCanPlay = fn;
+  }
 
   private _onDurationChange: (duration: number) => void = () => {};
 
@@ -173,6 +201,10 @@ export default class Gif {
     this._onProgress = fn;
   }
 
+  // =====================
+  // CLASS METHODS
+  // =====================
+
   constructor(url: string) {
     this._url = url;
     this.render_canvas = document.createElement('canvas');
@@ -229,7 +261,7 @@ export default class Gif {
   }
 
   private frameDelay() {
-    return this.frames[this.currentFrame].delayTime / Math.abs(this.speed);
+    return this.frames[this._currentFrame].delayTime / Math.abs(this.speed);
   }
 
   private renderAndSave(frame: Frame) {
@@ -303,7 +335,7 @@ export default class Gif {
   }
 
   private advanceFrame() {
-    let frameNumber = this.currentFrame;
+    let frameNumber = this._currentFrame;
     frameNumber += this.speed > 0 ? 1 : -1;
 
     const loopBackward = frameNumber < 0;
@@ -339,21 +371,27 @@ export default class Gif {
 
     this._frames = this.parseFrames(this.gif_data, pos, gct, this.keyFrameRate);
 
-    return this.renderKeyFrames()
-      .then(() => this.renderIntermediateFrames())
-      .then(() => this.advanceFrame())
-      .catch((err: any) => console.error('Rendering GIF failed!', err));
+    return (
+      this.renderKeyFrames()
+        .then(() => this.renderIntermediateFrames())
+        .then(() => {
+          this.onCanPlay();
+          this.onCanPlayThrough();
+        })
+        // .then(() => this.advanceFrame())
+        .catch((err: any) => console.error('Rendering GIF failed!', err))
+    );
   }
 
   // Download GIF
   // ============
 
-  private showFrame(frameNumber: number) {
+  public showFrame(frameNumber: number) {
     const lastFrame = this.frames.length - 1;
     frameNumber = clamp(frameNumber, 0, lastFrame);
     const currentTime = this.frames.slice(0, frameNumber + 1).reduce((sum, frame) => sum + frame.delayTime, 0);
-    this.currentFrame = frameNumber;
-    const frame = this.frames[this.currentFrame];
+    this._currentFrame = frameNumber;
+    const frame = this.frames[this._currentFrame];
 
     this.onProgress(currentTime);
 
@@ -399,6 +437,8 @@ export default class Gif {
     header.set(headerBytes);
     header.set(nextBytes, 6);
 
+    let duration = 0;
+
     while (pos < bytes.length) {
       switch (bytes[pos]) {
         case 0x21:
@@ -437,7 +477,10 @@ export default class Gif {
             transparent: gce.transparent,
             pos: { x, y },
             size: { w, h },
+            renderAtMs: duration,
           };
+
+          duration += frame.delayTime;
 
           // We try to detect transparency in first frame after drawing...
           // But we assume transparency if using method 2 since the background
@@ -469,7 +512,6 @@ export default class Gif {
           break;
         }
         case 0x3b: // End of file
-          const duration = frames.reduce((sum, frame) => sum + frame.delayTime, 0);
           this.setMetadata({ duration });
           return frames;
         default:
