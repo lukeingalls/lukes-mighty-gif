@@ -228,105 +228,6 @@ export default class Gif {
     // GIF parsing
     // ===========
 
-    const parseFrames = ((buffer: ArrayBuffer, pos: number, gct: Uint8Array, keyFrameRate: number) => {
-      const bytes = new Uint8Array(buffer);
-      const trailer = new Uint8Array([0x3b]);
-      const frames = [];
-      let gce: any = {
-        disposalMethod: 0,
-        transparent: 0,
-        delayTime: 10,
-      };
-      let packed;
-
-      // Rendering 87a GIFs didn't work right for some reason.
-      // Forcing the 89a header made them work.
-      const headerBytes = 'GIF89a'.split('').map(x => x.charCodeAt(0), []);
-      const nextBytes = bytes.subarray(6, 13);
-      const header = new Uint8Array(13);
-      header.set(headerBytes);
-      header.set(nextBytes, 6);
-
-      while (pos < bytes.length) {
-        switch (bytes[pos]) {
-          case 0x21:
-            switch (bytes[pos + 1]) {
-              case 0xf9: // Graphics control extension...
-                packed = bytes[pos + 3];
-                gce = {
-                  pos: pos,
-                  disposalMethod: bits(packed, 3, 3),
-                  transparent: bits(packed, 7, 1),
-                  delayTime: bytes[pos + 4],
-                  tci: bytes[pos + 6],
-                };
-                pos += 8;
-                break;
-              case 0xfe:
-                pos -= 12; // Comment extension fallthrough...
-              case 0xff:
-                pos -= 1; // Application extension fallthrough...
-              case 0x01:
-                pos += 15; // Plain Text extension fallthrough...
-              default: // Skip data sub-blocks
-                while (bytes[pos] !== 0x00) pos += bytes[pos] + 1;
-                pos++;
-            }
-            break;
-          case 0x2c: {
-            // `New image frame at ${pos}`
-            const [x, y, w, h] = new Uint16Array(buffer.slice(pos + 1, pos + 9));
-            const frame: Frame = {
-              disposalMethod: gce.disposalMethod,
-              delayTime: gce.delayTime < 2 ? 100 : gce.delayTime * 10,
-              isKeyFrame: frames.length % keyFrameRate === 0 && !!frames.length,
-              isRendered: false,
-              number: frames.length + 1,
-              transparent: gce.transparent,
-              pos: { x, y },
-              size: { w, h },
-            };
-
-            // We try to detect transparency in first frame after drawing...
-            // But we assume transparency if using method 2 since the background
-            // could show through
-            if (frame.disposalMethod === 2) {
-              this.hasTransparency = true;
-            }
-
-            // Skip local color table
-            const imageStart = pos;
-            pos += Gif.colorTableSize(bytes[pos + 9]) + 11;
-
-            // Skip data blocks
-            while (bytes[pos] !== 0x00) pos += bytes[pos] + 1;
-            let imageBlocks = bytes.subarray(imageStart, ++pos);
-
-            // Use a Graphics Control Extension
-            if (typeof gce.pos !== 'undefined') {
-              const _1 = bytes.subarray(gce.pos, gce.pos + 4); // Begin ext
-              const _2 = concat(_1, new Uint8Array([0x00, 0x00])); // Zero out the delay time
-              const _3 = concat(_2, bytes.subarray(gce.pos + 6, gce.pos + 8)); // End ext
-              imageBlocks = concat(_3, imageBlocks);
-            }
-            const _1 = concat(header, gct);
-            const _2 = concat(_1, imageBlocks);
-            const data = concat(_2, trailer);
-            (frame as any).blob = new Blob([data], { type: 'image/gif' });
-            frames.push(frame);
-            break;
-          }
-          case 0x3b: // End of file
-            const duration = frames.reduce((sum, frame) => sum + frame.delayTime, 0);
-            this.setMetadata({ duration });
-            return frames;
-          default:
-            this.onError(COULDNT_DECODE_GIF);
-            return [];
-        }
-      }
-    }).bind(this);
-
     // Drawing to canvas
     // =================
 
@@ -435,7 +336,7 @@ export default class Gif {
       let pos = 13 + Gif.colorTableSize(bytes[10]);
       const gct = bytes.subarray(13, pos);
 
-      this._frames = parseFrames(this.gif_data, pos, gct, this.keyFrameRate);
+      this._frames = this.parseFrames(this.gif_data, pos, gct, this.keyFrameRate);
 
       return renderKeyFrames()
         .then(renderIntermediateFrames)
@@ -476,6 +377,105 @@ export default class Gif {
       if (frame.drawable) ctx.drawImage(frame.drawable, 0, 0, this.width, this.height);
       else ctx.putImageData(frame.putable, 0, 0);
     }).bind(this);
+  }
+
+  private parseFrames(buffer: ArrayBuffer, pos: number, gct: Uint8Array, keyFrameRate: number) {
+    const bytes = new Uint8Array(buffer);
+    const trailer = new Uint8Array([0x3b]);
+    const frames = [];
+    let gce: any = {
+      disposalMethod: 0,
+      transparent: 0,
+      delayTime: 10,
+    };
+    let packed;
+
+    // Rendering 87a GIFs didn't work right for some reason.
+    // Forcing the 89a header made them work.
+    const headerBytes = 'GIF89a'.split('').map(x => x.charCodeAt(0), []);
+    const nextBytes = bytes.subarray(6, 13);
+    const header = new Uint8Array(13);
+    header.set(headerBytes);
+    header.set(nextBytes, 6);
+
+    while (pos < bytes.length) {
+      switch (bytes[pos]) {
+        case 0x21:
+          switch (bytes[pos + 1]) {
+            case 0xf9: // Graphics control extension...
+              packed = bytes[pos + 3];
+              gce = {
+                pos: pos,
+                disposalMethod: bits(packed, 3, 3),
+                transparent: bits(packed, 7, 1),
+                delayTime: bytes[pos + 4],
+                tci: bytes[pos + 6],
+              };
+              pos += 8;
+              break;
+            case 0xfe:
+              pos -= 12; // Comment extension fallthrough...
+            case 0xff:
+              pos -= 1; // Application extension fallthrough...
+            case 0x01:
+              pos += 15; // Plain Text extension fallthrough...
+            default: // Skip data sub-blocks
+              while (bytes[pos] !== 0x00) pos += bytes[pos] + 1;
+              pos++;
+          }
+          break;
+        case 0x2c: {
+          // `New image frame at ${pos}`
+          const [x, y, w, h] = new Uint16Array(buffer.slice(pos + 1, pos + 9));
+          const frame: Frame = {
+            disposalMethod: gce.disposalMethod,
+            delayTime: gce.delayTime < 2 ? 100 : gce.delayTime * 10,
+            isKeyFrame: frames.length % keyFrameRate === 0 && !!frames.length,
+            isRendered: false,
+            number: frames.length + 1,
+            transparent: gce.transparent,
+            pos: { x, y },
+            size: { w, h },
+          };
+
+          // We try to detect transparency in first frame after drawing...
+          // But we assume transparency if using method 2 since the background
+          // could show through
+          if (frame.disposalMethod === 2) {
+            this.hasTransparency = true;
+          }
+
+          // Skip local color table
+          const imageStart = pos;
+          pos += Gif.colorTableSize(bytes[pos + 9]) + 11;
+
+          // Skip data blocks
+          while (bytes[pos] !== 0x00) pos += bytes[pos] + 1;
+          let imageBlocks = bytes.subarray(imageStart, ++pos);
+
+          // Use a Graphics Control Extension
+          if (typeof gce.pos !== 'undefined') {
+            const _1 = bytes.subarray(gce.pos, gce.pos + 4); // Begin ext
+            const _2 = concat(_1, new Uint8Array([0x00, 0x00])); // Zero out the delay time
+            const _3 = concat(_2, bytes.subarray(gce.pos + 6, gce.pos + 8)); // End ext
+            imageBlocks = concat(_3, imageBlocks);
+          }
+          const _1 = concat(header, gct);
+          const _2 = concat(_1, imageBlocks);
+          const data = concat(_2, trailer);
+          (frame as any).blob = new Blob([data], { type: 'image/gif' });
+          frames.push(frame);
+          break;
+        }
+        case 0x3b: // End of file
+          const duration = frames.reduce((sum, frame) => sum + frame.delayTime, 0);
+          this.setMetadata({ duration });
+          return frames;
+        default:
+          this.onError(COULDNT_DECODE_GIF);
+          return [];
+      }
+    }
   }
 
   private static colorTableSize(packedHeader: number) {
