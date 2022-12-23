@@ -1,4 +1,4 @@
-import { Component, Host, h, Prop, Watch, Event, EventEmitter, State } from '@stencil/core';
+import { Component, Host, h, Prop, Watch, Event, EventEmitter } from '@stencil/core';
 import Gif from '../helpers';
 
 @Component({
@@ -12,11 +12,19 @@ export class LukesMightyGif {
 
   @Prop() src: string;
 
-  @State() duration: number;
-  @State() currentTime: number;
+  @Prop({ mutable: true }) currentTime: number;
+
+  /**
+   * The next few props are meant to be treated as read-only. I don't know
+   * how to make them read-only in Stencil, so this is all you get 🤷‍♂️.
+   */
+  @Prop({ mutable: true }) width: number;
+  @Prop({ mutable: true }) height: number;
+  @Prop({ mutable: true }) duration: number;
 
   @Event({ eventName: 'ondurationchange' }) durationchange: EventEmitter;
   @Event({ eventName: 'onerror' }) error: EventEmitter<Error>;
+  @Event({ eventName: 'onloadedmetadata' }) loadedmetadata: EventEmitter;
   @Event({ eventName: 'onloadstart' }) loadstart: EventEmitter;
   @Event({ eventName: 'onload' }) load: EventEmitter;
   @Event({ eventName: 'onprogress' }) progress: EventEmitter;
@@ -49,6 +57,12 @@ export class LukesMightyGif {
     this.gif.onProgress = (currentTime: number) => {
       this.currentTime = currentTime;
       this.progress.emit(currentTime);
+    };
+    this.gif.onLoadedMetadata = () => {
+      this.duration = this.gif.duration;
+      this.width = this.gif.width;
+      this.height = this.gif.height;
+      this.loadedmetadata.emit();
     };
   }
 

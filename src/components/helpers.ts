@@ -60,6 +60,16 @@ export default class Gif {
     return this._duration;
   }
 
+  private setMetadata({ width, height, duration }: { width?: number; height?: number; duration?: number }) {
+    if (typeof width === 'number') this._width = width;
+    if (typeof height === 'number') this._height = height;
+    if (typeof duration === 'number') {
+      this._duration = duration;
+      this.onDurationChange(duration);
+    }
+    this.onLoadedMetadata();
+  }
+
   public error: Error;
 
   // =====================
@@ -103,6 +113,20 @@ export default class Gif {
     this._onLoad = () => {
       this.doGif();
       fn();
+    };
+  }
+
+  private _onLoadedMetadata: () => void = () => {};
+
+  get onLoadedMetadata() {
+    return this._onLoadedMetadata;
+  }
+
+  set onLoadedMetadata(fn: () => void) {
+    this._onLoadedMetadata = () => {
+      if (this.width ?? this.height ?? this.duration) {
+        fn();
+      }
     };
   }
 
@@ -301,7 +325,7 @@ export default class Gif {
           }
           case 0x3b: // End of file
             const duration = frames.reduce((sum, frame) => sum + frame.delayTime, 0);
-            this.onDurationChange(duration);
+            this.setMetadata({ duration });
             return frames;
           default:
             this.onError(COULDNT_DECODE_GIF);
@@ -409,8 +433,7 @@ export default class Gif {
       // Image dimensions
       const dimensions = new Uint16Array(this.gif_data, 6, 2);
       const [width, height] = dimensions;
-      this._width = width;
-      this._height = height;
+      this.setMetadata({ width, height });
 
       this.render_canvas.width = display_canvas.width = this.width;
       this.render_canvas.height = display_canvas.height = this.height;

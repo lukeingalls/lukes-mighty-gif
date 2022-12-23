@@ -7,7 +7,14 @@
 import { HTMLStencilElement, JSXBase } from "@stencil/core/internal";
 export namespace Components {
     interface LukesMightyGif {
+        "currentTime": number;
+        "duration": number;
+        "height": number;
         "src": string;
+        /**
+          * The next few props are meant to be treated as read-only. I don't know how to make them read-only in Stencil, so this is all you get 🤷‍♂️.
+         */
+        "width": number;
     }
 }
 export interface LukesMightyGifCustomEvent<T> extends CustomEvent<T> {
@@ -27,12 +34,20 @@ declare global {
 }
 declare namespace LocalJSX {
     interface LukesMightyGif {
+        "currentTime"?: number;
+        "duration"?: number;
+        "height"?: number;
         "onOndurationchange"?: (event: LukesMightyGifCustomEvent<any>) => void;
         "onOnerror"?: (event: LukesMightyGifCustomEvent<Error>) => void;
         "onOnload"?: (event: LukesMightyGifCustomEvent<any>) => void;
+        "onOnloadedmetadata"?: (event: LukesMightyGifCustomEvent<any>) => void;
         "onOnloadstart"?: (event: LukesMightyGifCustomEvent<any>) => void;
         "onOnprogress"?: (event: LukesMightyGifCustomEvent<any>) => void;
         "src"?: string;
+        /**
+          * The next few props are meant to be treated as read-only. I don't know how to make them read-only in Stencil, so this is all you get 🤷‍♂️.
+         */
+        "width"?: number;
     }
     interface IntrinsicElements {
         "lukes-mighty-gif": LukesMightyGif;
