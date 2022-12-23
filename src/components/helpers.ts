@@ -35,6 +35,8 @@ export default class Gif {
   private gif_data: ArrayBuffer;
   private render_canvas: HTMLCanvasElement;
   private render_canvas_ctx: CanvasRenderingContext2D;
+  private display_canvas: HTMLCanvasElement;
+  private display_ctx: CanvasRenderingContext2D;
   private currentFrame = 0;
   private hasTransparency = false;
   private speed = 1;
@@ -176,6 +178,19 @@ export default class Gif {
     this.render_canvas = document.createElement('canvas');
     this.render_canvas_ctx = this.render_canvas.getContext('2d', { willReadFrequently: true });
 
+    this.display_canvas = document.querySelector('#canvas-display') as HTMLCanvasElement;
+
+    if (!this.display_canvas) {
+      this.onError(NOT_READY);
+      return;
+    }
+
+    this.display_ctx = this.display_canvas.getContext('2d');
+    if (!this.display_ctx) {
+      this.onError(NOT_READY);
+      return;
+    }
+
     const render_canvas_mount_point = document.getElementById('render-canvas-mount-point');
 
     if (!render_canvas_mount_point) {
@@ -214,10 +229,6 @@ export default class Gif {
   }
 
   private doGif() {
-    const display_canvas = document.querySelector('#canvas-display') as HTMLCanvasElement;
-
-    const display_ctx = display_canvas.getContext('2d');
-
     // Validate URL
     // ============
 
@@ -361,15 +372,15 @@ export default class Gif {
       // Draw current frame only if it's already rendered
       if (frame.isRendered) {
         if (this.hasTransparency) {
-          display_ctx.clearRect(0, 0, this.width, this.height);
+          this.display_ctx.clearRect(0, 0, this.width, this.height);
         }
-        return drawFrame(frame, display_ctx);
+        return drawFrame(frame, this.display_ctx);
       }
 
       // Rendering not complete. Draw all frames since latest key frame as well
       const first = Math.max(0, frameNumber - (frameNumber % this.keyFrameRate));
       for (let i = first; i <= frameNumber; i++) {
-        renderFrame(this.frames[i], display_ctx);
+        renderFrame(this.frames[i], this.display_ctx);
       }
     }).bind(this);
 
