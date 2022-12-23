@@ -37,7 +37,10 @@ export class LukesMightyGif {
     this.gif = new Gif(this.src);
     this.gif.onLoad = () => this.load.emit();
     this.gif.onLoadStart = () => this.loadstart.emit();
-    this.gif.onError = (error: Error) => this.error.emit(error);
+    this.gif.onError = (error: Error) => {
+      console.error(error);
+      this.error.emit(error);
+    };
     this.gif.onDurationChange = (duration: number) => {
       this.durationchange.emit();
       this.duration = duration;
