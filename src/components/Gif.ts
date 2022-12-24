@@ -40,8 +40,6 @@ export default class Gif {
   private gif_data: ArrayBuffer;
   private render_canvas: HTMLCanvasElement;
   private render_canvas_ctx: CanvasRenderingContext2D;
-  private display_canvas: HTMLCanvasElement;
-  private display_ctx: CanvasRenderingContext2D;
   private hasTransparency = false;
   private speed = 1;
   private keyFrameRate = 15; // Performance: Pre-render every n frames
@@ -209,31 +207,11 @@ export default class Gif {
     this.render_canvas = document.createElement('canvas');
     this.render_canvas_ctx = this.render_canvas.getContext('2d', { willReadFrequently: true });
 
-    this.display_canvas = document.querySelector('#canvas-display') as HTMLCanvasElement;
-
-    if (!this.display_canvas) {
-      this.onError(NOT_READY);
-      return;
-    }
-
-    this.display_ctx = this.display_canvas.getContext('2d');
-    if (!this.display_ctx) {
-      this.onError(NOT_READY);
-      return;
-    }
-
-    const render_canvas_mount_point = document.getElementById('render-canvas-mount-point');
-
-    if (!render_canvas_mount_point) {
-      this.onError(NOT_READY);
-      return;
-    }
     if (!this.render_canvas_ctx) {
       this.onError(NOT_READY);
       return;
     }
 
-    render_canvas_mount_point.appendChild(this.render_canvas);
     this.isGif();
   }
 
@@ -364,7 +342,7 @@ export default class Gif {
   // Download GIF
   // ============
 
-  public showFrame(frameNumber: number) {
+  public showFrame(frameNumber: number, { display_ctx }: { display_ctx: CanvasRenderingContext2D }) {
     const lastFrame = this.frames.length - 1;
     frameNumber = clamp(frameNumber, 0, lastFrame);
     this._currentFrame = frameNumber;
@@ -375,15 +353,15 @@ export default class Gif {
     // Draw current frame only if it's already rendered
     if (frame.isRendered) {
       if (this.hasTransparency) {
-        this.display_ctx.clearRect(0, 0, this.width, this.height);
+        display_ctx.clearRect(0, 0, this.width, this.height);
       }
-      return this.drawFrame(frame, this.display_ctx);
+      return this.drawFrame(frame, display_ctx);
     }
 
     // Rendering not complete. Draw all frames since latest key frame as well
     const first = Math.max(0, frameNumber - (frameNumber % this.keyFrameRate));
     for (let i = first; i <= frameNumber; i++) {
-      this.renderFrame(this.frames[i], this.display_ctx);
+      this.renderFrame(this.frames[i], display_ctx);
     }
   }
 

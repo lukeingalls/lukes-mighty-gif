@@ -5,14 +5,15 @@ import { clamp, throttle } from 'lodash';
 @Component({
   tag: 'lukes-mighty-gif',
   styleUrl: 'lukes-mighty-gif.css',
-  // TODO: undo this
-  shadow: false,
+  shadow: true,
 })
 export class LukesMightyGif {
   gif: Gif;
   startedPlayingAt = 0;
   resetShowControlsIntervalRef: number | null;
   containerRef: HTMLDivElement | null = null;
+  canvasRef: HTMLCanvasElement | null = null;
+  canvasCtxRef: CanvasRenderingContext2D | null = null;
   progressBarRef: HTMLDivElement | null = null;
   mouseIsDownForSeek = false;
 
@@ -148,7 +149,7 @@ export class LukesMightyGif {
     });
 
     if (targetFrameNumber !== this.gif.currentFrame) {
-      this.gif.showFrame(targetFrameNumber);
+      this.gif.showFrame(targetFrameNumber, { display_ctx: this.canvasCtxRef! });
     }
   }
 
@@ -210,7 +211,16 @@ export class LukesMightyGif {
             this.containerRef = el;
           }}
         >
-          <canvas id="canvas-display" class="gif-canvas" width={this.width} height={this.height}></canvas>
+          <canvas
+            id="canvas-display"
+            class="gif-canvas"
+            ref={el => {
+              this.canvasRef = el;
+              this.canvasCtxRef = el.getContext('2d');
+            }}
+            width={this.width}
+            height={this.height}
+          ></canvas>
 
           {this.shouldShowControls && (
             <div id="control-bar" class="control-bar" onClick={e => e.stopPropagation()}>
