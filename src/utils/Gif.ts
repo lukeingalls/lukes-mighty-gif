@@ -1,6 +1,6 @@
 import clamp from 'lodash.clamp';
-import download from './lukes-mighty-gif/lib/download';
-import { bits, concat } from './utils';
+import download from './download';
+import { bits, concat } from '../components/utils';
 
 const chainPromises = [(x: any, y: any) => x.then(y), Promise.resolve()] as const;
 

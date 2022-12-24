@@ -1,5 +1,5 @@
 import { Component, Host, h, Prop, Watch, Event, EventEmitter, State, Listen } from '@stencil/core';
-import Gif from '../Gif';
+import Gif from '../../utils/Gif';
 import { clamp, throttle } from 'lodash';
 
 @Component({
