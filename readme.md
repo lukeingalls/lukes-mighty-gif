@@ -11,7 +11,7 @@ yarn add lukes-mighty-gif
 or
 
 ```
-npm --save lukes-mighty-gif
+npm install --save lukes-mighty-gif
 ```
 
 The api documentation is found in `src/components/lukes-mighty-gif/readme.md` which you can access with [this link](./src/components/lukes-mighty-gif/readme.md).
