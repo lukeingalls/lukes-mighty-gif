@@ -41,7 +41,6 @@ export default class Gif {
   private render_canvas: HTMLCanvasElement;
   private render_canvas_ctx: CanvasRenderingContext2D;
   private hasTransparency = false;
-  private speed = 1;
   private keyFrameRate = 15; // Performance: Pre-render every n frames
   private firstFrameChecked = false;
 

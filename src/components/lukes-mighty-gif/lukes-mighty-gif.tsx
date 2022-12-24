@@ -22,6 +22,7 @@ export class LukesMightyGif {
 
   @Prop({ mutable: true }) currentTime: number = 0;
   @Prop({ mutable: true }) paused: boolean;
+  @Prop({ mutable: true }) playbackRate: number = 1;
 
   /**
    * The next few props are meant to be treated as read-only. I don't know
@@ -93,6 +94,19 @@ export class LukesMightyGif {
     this.showFrame(this.currentTime);
   }
 
+  @Watch('playbackRate')
+  handlePlaybackRateChange() {
+    if (Math.abs(this.playbackRate) > 8) {
+      console.warn(`Bro chill... playbackRate is currently ${this.playbackRate}.`);
+    }
+    const adj = (() => {
+      if (this.playbackRate === 0) return 0;
+      if (this.playbackRate > 0) return (this.currentTime / this.playbackRate) * (this.playbackRate - 1);
+      return (this.currentTime / this.playbackRate) * (this.playbackRate + 1);
+    })();
+    this.startedPlayingAt += adj;
+  }
+
   handleSrcChange() {
     this.gif = new Gif(this.src);
     this.gif.onLoad = () => this.load.emit();
@@ -154,7 +168,11 @@ export class LukesMightyGif {
   }
 
   play() {
-    const targetTime = (performance.now() - this.startedPlayingAt) % this.duration;
+    const timeElapsed = performance.now() - this.startedPlayingAt;
+    const stepSize = (timeElapsed - this.currentTime) % this.duration;
+    const dirtyTargetTime = (this.currentTime + stepSize * this.playbackRate) % this.duration;
+    const targetTime = dirtyTargetTime < 0 ? this.duration + dirtyTargetTime : dirtyTargetTime;
+    this.startedPlayingAt -= stepSize * (this.playbackRate - 1);
 
     this.currentTime = targetTime;
 

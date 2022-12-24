@@ -18,8 +18,10 @@
         <h3>Gif rendered via custom webcomponent</h3>
         <lukes-mighty-gif />
       </div>
+      <button id="slower">slower</button>
+      <div>current speed: <span id="speed">1</span></div>
+      <button id="faster">faster</button>
     </div>
-    <video src="http://localhost:8080/Studio_Project.mp4" style="max-width: 100vw;" controls>
   </body>
   <script>
     const src = 'http://localhost:8080/soccer-gif';
@@ -34,5 +36,13 @@
     gif.addEventListener('onload', () => console.log('load'));
     gif.addEventListener('onerror', () => console.log('error'));
     gif.addEventListener('ondurationchange', duration => console.log('duration', duration));
+
+    let speed = 1;
+    const updateSpeed = newSpeed => {
+      document.querySelector('#speed').innerText = newSpeed;
+      gif.playbackRate = newSpeed;
+    };
+    document.querySelector('#slower').addEventListener('click', () => updateSpeed((speed -= 1)));
+    document.querySelector('#faster').addEventListener('click', () => updateSpeed((speed += 1)));
   </script>
 </html>
