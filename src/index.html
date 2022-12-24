@@ -36,6 +36,9 @@
     gif.addEventListener('onload', () => console.log('load'));
     gif.addEventListener('onerror', () => console.log('error'));
     gif.addEventListener('ondurationchange', duration => console.log('duration', duration));
+    gif.addEventListener('onplay', () => console.log('play'));
+    gif.addEventListener('onpause', () => console.log('pause'));
+    gif.addEventListener('onseeked', () => console.log('seeked'));
 
     let speed = 1;
     const updateSpeed = newSpeed => {

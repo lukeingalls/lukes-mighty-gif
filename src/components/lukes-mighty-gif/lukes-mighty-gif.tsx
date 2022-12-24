@@ -39,7 +39,10 @@ export class LukesMightyGif {
   @Event({ eventName: 'onloadedmetadata' }) loadedmetadata: EventEmitter;
   @Event({ eventName: 'onloadstart' }) loadstart: EventEmitter;
   @Event({ eventName: 'onload' }) load: EventEmitter;
+  @Event({ eventName: 'onpause' }) pauseEvent: EventEmitter;
+  @Event({ eventName: 'onplay' }) playEvent: EventEmitter;
   @Event({ eventName: 'onprogress' }) progress: EventEmitter;
+  @Event({ eventName: 'onseeked' }) seeked: EventEmitter;
 
   @Listen('mousemove', { target: 'body' })
   mouseMoved(e: MouseEvent) {
@@ -92,6 +95,7 @@ export class LukesMightyGif {
   seek() {
     if (!this.paused) return;
     this.showFrame(this.currentTime);
+    this.seeked.emit();
   }
 
   @Watch('playbackRate')
@@ -133,7 +137,7 @@ export class LukesMightyGif {
     };
     this.gif.onCanPlayThrough = () => {
       this.canplaythrough.emit();
-      this.startPlaying();
+      this.play();
     };
   }
 
@@ -146,13 +150,14 @@ export class LukesMightyGif {
     }, 2000);
   }
 
-  startPlaying() {
+  public play() {
     this.startedPlayingAt = performance.now() - this.currentTime;
     this.paused = false;
-    this.play();
+    this._play();
+    this.playEvent.emit();
   }
 
-  pause() {
+  public pause() {
     this.paused = true;
   }
 
@@ -167,7 +172,7 @@ export class LukesMightyGif {
     }
   }
 
-  play() {
+  private _play() {
     const timeElapsed = performance.now() - this.startedPlayingAt;
     const stepSize = (timeElapsed - this.currentTime) % this.duration;
     const dirtyTargetTime = (this.currentTime + stepSize * this.playbackRate) % this.duration;
@@ -179,7 +184,11 @@ export class LukesMightyGif {
     this.showFrame(targetTime);
 
     requestAnimationFrame(() => {
-      if (!this.paused) this.play();
+      if (!this.paused) {
+        this._play();
+      } else {
+        this.pauseEvent.emit();
+      }
     });
   }
 
@@ -210,7 +219,7 @@ export class LukesMightyGif {
           }}
           onClick={() => {
             if (this.paused) {
-              this.startPlaying();
+              this.play();
             } else {
               this.pause();
             }
@@ -247,7 +256,7 @@ export class LukesMightyGif {
                 onClick={e => {
                   e.stopPropagation();
                   if (this.paused) {
-                    this.startPlaying();
+                    this.play();
                   } else {
                     this.pause();
                   }

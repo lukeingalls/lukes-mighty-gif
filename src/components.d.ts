@@ -48,7 +48,10 @@ declare namespace LocalJSX {
         "onOnload"?: (event: LukesMightyGifCustomEvent<any>) => void;
         "onOnloadedmetadata"?: (event: LukesMightyGifCustomEvent<any>) => void;
         "onOnloadstart"?: (event: LukesMightyGifCustomEvent<any>) => void;
+        "onOnpause"?: (event: LukesMightyGifCustomEvent<any>) => void;
+        "onOnplay"?: (event: LukesMightyGifCustomEvent<any>) => void;
         "onOnprogress"?: (event: LukesMightyGifCustomEvent<any>) => void;
+        "onOnseeked"?: (event: LukesMightyGifCustomEvent<any>) => void;
         "paused"?: boolean;
         "playbackRate"?: number;
         "src"?: string;
