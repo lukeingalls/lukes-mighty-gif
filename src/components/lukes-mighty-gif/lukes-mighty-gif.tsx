@@ -1,6 +1,6 @@
 import { Component, Host, h, Prop, Watch, Event, EventEmitter, State, Listen } from '@stencil/core';
 import Gif from '../helpers';
-import { debounce } from 'lodash';
+import { clamp, throttle } from 'lodash';
 
 @Component({
   tag: 'lukes-mighty-gif',
@@ -12,7 +12,8 @@ export class LukesMightyGif {
   gif: Gif;
   startedPlayingAt = 0;
   resetShowControlsIntervalRef: number | null;
-  ref: HTMLDivElement | null = null;
+  containerRef: HTMLDivElement | null = null;
+  progressBarRef: HTMLDivElement | null = null;
   mouseIsDownForSeek = false;
 
   @Prop() src: string;
@@ -40,9 +41,8 @@ export class LukesMightyGif {
 
   @Listen('mousemove', { target: 'body' })
   mouseMoved(e: MouseEvent) {
-    console.log('here');
     if (!this.mouseIsDownForSeek) return;
-    this.debouncedBindCurrentTimeToMouse(e);
+    this.throttledBindCurrentTimeToMouse(e);
   }
   @Listen('mouseup', { target: 'body' })
   handleMouseUp() {
@@ -104,7 +104,7 @@ export class LukesMightyGif {
       this.durationchange.emit();
       this.duration = duration;
     };
-    this.gif.onProgress = debounce(() => {
+    this.gif.onProgress = throttle(() => {
       this.progress.emit();
     }, 150);
     this.gif.onLoadedMetadata = () => {
@@ -169,15 +169,15 @@ export class LukesMightyGif {
   }
 
   bindCurrentTimeToMouse(e: MouseEvent) {
-    const rect = (e.target as HTMLDivElement).getBoundingClientRect();
-    const x = e.clientX - rect.left;
+    const rect = this.progressBarRef.getBoundingClientRect();
+    const x = clamp(e.clientX - rect.left, 0, this.width);
     const percent = x / rect.width;
     const newCurrentTime = percent * this.duration;
     this.currentTime = newCurrentTime;
     this.startedPlayingAt = performance.now() - newCurrentTime;
   }
   // This isn't that great, but it's better than nothing
-  debouncedBindCurrentTimeToMouse = debounce(this.bindCurrentTimeToMouse, 50);
+  throttledBindCurrentTimeToMouse = throttle(this.bindCurrentTimeToMouse, 100);
 
   render() {
     return (
@@ -207,7 +207,7 @@ export class LukesMightyGif {
             this.resetShowControlsInterval();
           }}
           ref={el => {
-            this.ref = el;
+            this.containerRef = el;
           }}
         >
           <canvas id="canvas-display" class="gif-canvas" width={this.width} height={this.height}></canvas>
@@ -218,7 +218,6 @@ export class LukesMightyGif {
                 class="play-pause-button"
                 onClick={e => {
                   e.stopPropagation();
-                  console.log('here');
                   if (this.paused) {
                     this.startPlaying();
                   } else {
@@ -230,6 +229,9 @@ export class LukesMightyGif {
               </div>
               <div
                 class="progress-bar"
+                ref={el => {
+                  this.progressBarRef = el;
+                }}
                 onMouseDown={() => {
                   this.mouseIsDownForSeek = true;
                 }}
