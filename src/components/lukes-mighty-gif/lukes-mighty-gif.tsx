@@ -1,5 +1,6 @@
 import { Component, Host, h, Prop, Watch, Event, EventEmitter, State } from '@stencil/core';
 import Gif from '../helpers';
+import { debounce } from 'lodash';
 
 @Component({
   tag: 'lukes-mighty-gif',
@@ -16,7 +17,7 @@ export class LukesMightyGif {
   @Prop() src: string;
   @Prop() controls: boolean;
 
-  @Prop({ mutable: true }) currentTime: number;
+  @Prop({ mutable: true }) currentTime: number = 0;
   @Prop({ mutable: true }) paused: boolean;
 
   /**
@@ -73,6 +74,12 @@ export class LukesMightyGif {
     }
   }
 
+  @Watch('currentTime')
+  seek() {
+    if (!this.paused) return;
+    this.showFrame(this.currentTime);
+  }
+
   handleSrcChange() {
     this.gif = new Gif(this.src);
     this.gif.onLoad = () => this.load.emit();
@@ -85,10 +92,9 @@ export class LukesMightyGif {
       this.durationchange.emit();
       this.duration = duration;
     };
-    this.gif.onProgress = (currentTime: number) => {
-      this.currentTime = currentTime;
-      this.progress.emit(currentTime);
-    };
+    this.gif.onProgress = debounce(() => {
+      this.progress.emit();
+    }, 150);
     this.gif.onLoadedMetadata = () => {
       this.duration = this.gif.duration;
       this.width = this.gif.width;
@@ -114,7 +120,7 @@ export class LukesMightyGif {
   }
 
   startPlaying() {
-    this.startedPlayingAt = performance.now() - this.gif.frames[this.gif.currentFrame].renderAtMs;
+    this.startedPlayingAt = performance.now() - this.currentTime;
     this.paused = false;
     this.play();
   }
@@ -123,17 +129,23 @@ export class LukesMightyGif {
     this.paused = true;
   }
 
-  play() {
-    const targetTime = (performance.now() - this.startedPlayingAt) % this.duration;
-
+  showFrame(time: number) {
     // @ts-expect-error findLastIndex
     const targetFrameNumber = this.gif.frames.findLastIndex((frame: typeof this['gif']['frames'][number]) => {
-      return frame.renderAtMs <= targetTime;
+      return frame.renderAtMs <= time;
     });
 
     if (targetFrameNumber !== this.gif.currentFrame) {
       this.gif.showFrame(targetFrameNumber);
     }
+  }
+
+  play() {
+    const targetTime = (performance.now() - this.startedPlayingAt) % this.duration;
+
+    this.currentTime = targetTime;
+
+    this.showFrame(targetTime);
 
     requestAnimationFrame(() => {
       if (!this.paused) this.play();
@@ -178,7 +190,7 @@ export class LukesMightyGif {
           <canvas id="canvas-display" class="gif-canvas" width={this.width} height={this.height}></canvas>
 
           {this.shouldShowControls && (
-            <div id="control-bar" class="control-bar">
+            <div id="control-bar" class="control-bar" onClick={e => e.stopPropagation()}>
               <div
                 class="play-pause-button"
                 onClick={e => {
@@ -193,7 +205,20 @@ export class LukesMightyGif {
               >
                 {this.paused ? <div class="play-button" /> : <div class="pause-button" />}
               </div>
-              <div class="progress-bar">
+              <div
+                class="progress-bar"
+                onClick={e => {
+                  e.stopPropagation();
+                  const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+                  const x = e.clientX - rect.left;
+                  const percent = x / rect.width;
+                  const newCurrentTime = percent * this.duration;
+                  console.log({ x, width: rect.width, percent, ct: this.currentTime, duration: this.duration, ct0: percent * this.duration, ct1: newCurrentTime });
+                  console.log(newCurrentTime);
+                  this.currentTime = newCurrentTime;
+                  this.startedPlayingAt = performance.now() - newCurrentTime;
+                }}
+              >
                 <div class="progress-bar__filler" style={{ width: `${(100 * this.currentTime) / this.duration}%` }} />
               </div>
             </div>

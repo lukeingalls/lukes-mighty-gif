@@ -190,13 +190,13 @@ export default class Gif {
     };
   }
 
-  private _onProgress: (currentTime: number) => void = () => {};
+  private _onProgress: () => void = () => {};
 
   get onProgress() {
     return this._onProgress;
   }
 
-  set onProgress(fn: (currentTime: number) => void) {
+  set onProgress(fn: () => void) {
     this._onProgress = fn;
   }
 
@@ -367,11 +367,10 @@ export default class Gif {
   public showFrame(frameNumber: number) {
     const lastFrame = this.frames.length - 1;
     frameNumber = clamp(frameNumber, 0, lastFrame);
-    const currentTime = this.frames.slice(0, frameNumber + 1).reduce((sum, frame) => sum + frame.delayTime, 0);
     this._currentFrame = frameNumber;
     const frame = this.frames[this._currentFrame];
 
-    this.onProgress(currentTime);
+    this.onProgress();
 
     // Draw current frame only if it's already rendered
     if (frame.isRendered) {
