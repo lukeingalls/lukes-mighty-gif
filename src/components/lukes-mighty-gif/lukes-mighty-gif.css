@@ -68,6 +68,14 @@
   cursor: pointer;
 }
 
+.play-pause-button:hover .play-button {
+  background-color: white;
+}
+
+.play-pause-button:hover .pause-button {
+  border-color: white;
+}
+
 .play-button {
   transform: rotate(45deg);
   background-color: #a4afb1;
@@ -76,6 +84,7 @@
   border-radius: 3px;
   clip-path: polygon(0% 10%, 0% 0%, 100% 0%, 100% 100%, 90% 100%);
   margin-left: -6px;
+  transition: 0.3s;
 }
 
 .pause-button {
@@ -86,4 +95,5 @@
   border: #a4afb1 3px solid;
   border-top: none;
   border-bottom: none;
+  transition: 0.3s;
 }

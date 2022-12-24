@@ -154,6 +154,15 @@ export class LukesMightyGif {
 
             height: `${this.height}px`,
           }}
+          onClick={() => {
+            if (this.paused) {
+              this.startPlaying();
+            } else {
+              this.pause();
+            }
+            this.shouldShowControls = true;
+            this.resetShowControlsInterval();
+          }}
           onMouseEnter={() => {
             this.shouldShowControls = true;
             this.resetShowControlsInterval();
@@ -172,7 +181,9 @@ export class LukesMightyGif {
             <div id="control-bar" class="control-bar">
               <div
                 class="play-pause-button"
-                onClick={() => {
+                onClick={e => {
+                  e.stopPropagation();
+                  console.log('here');
                   if (this.paused) {
                     this.startPlaying();
                   } else {
