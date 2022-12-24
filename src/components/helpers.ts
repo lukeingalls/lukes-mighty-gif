@@ -46,7 +46,6 @@ export default class Gif {
   private speed = 1;
   private keyFrameRate = 15; // Performance: Pre-render every n frames
   private firstFrameChecked = false;
-  private playTimeoutId: number | null = null;
 
   private _currentFrame = 0;
 
