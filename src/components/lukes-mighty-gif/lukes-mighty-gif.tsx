@@ -18,19 +18,37 @@ export class LukesMightyGif {
   mouseIsDownForSeek = false;
 
   @Prop() src: string;
-  @Prop() controls: boolean;
+  /**
+   * Whether or not to show the controls. Defaults to true.
+   */
+  @Prop() controls: boolean = true;
 
+  /**
+   * The current time in milliseconds. Defaults to 0. Setting this value will
+   * seek to the provided time.
+   */
   @Prop({ mutable: true }) currentTime: number = 0;
-  @Prop({ mutable: true }) paused: boolean;
+  /**
+   * Whether or not the gif is paused. Defaults to true.
+   */
+  @Prop({ mutable: true }) paused: boolean = true;
+  /**
+   * How fast the gif should play in multiples of the base speed. Defaults to 1.
+   */
   @Prop({ mutable: true }) playbackRate: number = 1;
 
   /**
-   * The next few props are meant to be treated as read-only. I don't know
-   * how to make them read-only in Stencil, so this is all you get 🤷‍♂️.
+   * The width of the gif. Defaults to 0. Read-only.
    */
-  @Prop({ mutable: true }) width: number;
-  @Prop({ mutable: true }) height: number;
-  @Prop({ mutable: true }) duration: number;
+  @Prop({ mutable: true }) width: number = 0;
+  /**
+   * The height of the gif. Defaults to 0. Read-only.
+   */
+  @Prop({ mutable: true }) height: number = 0;
+  /**
+   * The duration of the gif. Defaults to 0. Read-only.
+   */
+  @Prop({ mutable: true }) duration: number = 0;
 
   @Event({ eventName: 'oncanplay' }) canplay: EventEmitter;
   @Event({ eventName: 'oncanplaythrough' }) canplaythrough: EventEmitter;
@@ -137,7 +155,7 @@ export class LukesMightyGif {
     };
     this.gif.onCanPlayThrough = () => {
       this.canplaythrough.emit();
-      this.play();
+      this.gif.showFrame(0, { display_ctx: this.canvasCtxRef! });
     };
   }
 

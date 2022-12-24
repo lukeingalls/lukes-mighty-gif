@@ -7,15 +7,33 @@
 import { HTMLStencilElement, JSXBase } from "@stencil/core/internal";
 export namespace Components {
     interface LukesMightyGif {
+        /**
+          * Whether or not to show the controls. Defaults to true.
+         */
         "controls": boolean;
+        /**
+          * The current time in milliseconds. Defaults to 0. Setting this value will seek to the provided time.
+         */
         "currentTime": number;
+        /**
+          * The duration of the gif. Defaults to 0. Read-only.
+         */
         "duration": number;
+        /**
+          * The height of the gif. Defaults to 0. Read-only.
+         */
         "height": number;
+        /**
+          * Whether or not the gif is paused. Defaults to true.
+         */
         "paused": boolean;
+        /**
+          * How fast the gif should play in multiples of the base speed. Defaults to 1.
+         */
         "playbackRate": number;
         "src": string;
         /**
-          * The next few props are meant to be treated as read-only. I don't know how to make them read-only in Stencil, so this is all you get 🤷‍♂️.
+          * The width of the gif. Defaults to 0. Read-only.
          */
         "width": number;
     }
@@ -37,9 +55,21 @@ declare global {
 }
 declare namespace LocalJSX {
     interface LukesMightyGif {
+        /**
+          * Whether or not to show the controls. Defaults to true.
+         */
         "controls"?: boolean;
+        /**
+          * The current time in milliseconds. Defaults to 0. Setting this value will seek to the provided time.
+         */
         "currentTime"?: number;
+        /**
+          * The duration of the gif. Defaults to 0. Read-only.
+         */
         "duration"?: number;
+        /**
+          * The height of the gif. Defaults to 0. Read-only.
+         */
         "height"?: number;
         "onOncanplay"?: (event: LukesMightyGifCustomEvent<any>) => void;
         "onOncanplaythrough"?: (event: LukesMightyGifCustomEvent<any>) => void;
@@ -52,11 +82,17 @@ declare namespace LocalJSX {
         "onOnplay"?: (event: LukesMightyGifCustomEvent<any>) => void;
         "onOnprogress"?: (event: LukesMightyGifCustomEvent<any>) => void;
         "onOnseeked"?: (event: LukesMightyGifCustomEvent<any>) => void;
+        /**
+          * Whether or not the gif is paused. Defaults to true.
+         */
         "paused"?: boolean;
+        /**
+          * How fast the gif should play in multiples of the base speed. Defaults to 1.
+         */
         "playbackRate"?: number;
         "src"?: string;
         /**
-          * The next few props are meant to be treated as read-only. I don't know how to make them read-only in Stencil, so this is all you get 🤷‍♂️.
+          * The width of the gif. Defaults to 0. Read-only.
          */
         "width"?: number;
     }

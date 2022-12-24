@@ -1,5 +1,5 @@
 {
-  "name": "play-gif",
+  "name": "lukes-mighty-gif",
   "version": "0.0.1",
   "description": "Stencil Component Starter",
   "main": "dist/index.cjs.js",
@@ -12,7 +12,7 @@
   "unpkg": "dist/play-gif/play-gif.esm.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ionic-team/stencil-component-starter.git"
+    "url": "https://github.com:lukeingalls/lukes-mighty-gif.git"
   },
   "files": [
     "dist/",
@@ -40,5 +40,17 @@
     "jest-cli": "^27.4.5",
     "puppeteer": "^10.0.0"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ionic-team/stencil-component-starter/issues"
+  },
+  "homepage": "https://github.com/ionic-team/stencil-component-starter#readme",
+  "keywords": [
+    "Gif",
+    "HTMLMediaElement",
+    "play",
+    "pause",
+    "webcomponents"
+  ],
+  "author": "Luke Ingalls"
 }
