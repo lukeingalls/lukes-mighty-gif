@@ -7,6 +7,7 @@
 import { HTMLStencilElement, JSXBase } from "@stencil/core/internal";
 export namespace Components {
     interface LukesMightyGif {
+        "controls": boolean;
         "currentTime": number;
         "duration": number;
         "height": number;
@@ -35,6 +36,7 @@ declare global {
 }
 declare namespace LocalJSX {
     interface LukesMightyGif {
+        "controls"?: boolean;
         "currentTime"?: number;
         "duration"?: number;
         "height"?: number;

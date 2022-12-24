@@ -11,6 +11,7 @@ export class LukesMightyGif {
   gif: Gif;
 
   @Prop() src: string;
+  @Prop() controls: boolean;
 
   @Prop({ mutable: true }) currentTime: number;
   @Prop({ mutable: true }) paused: boolean;
@@ -112,24 +113,33 @@ export class LukesMightyGif {
   render() {
     return (
       <Host>
-        <div>
-          <canvas id="canvas-display" width={this.width} height={this.height}></canvas>
+        <div
+          class="gif-container"
+          style={{
+            width: `${this.width}px`,
 
-          <div id="scrubber-bar" style={{ width: `${this.width}px` }} class="progress-bar">
-            <div class="progress-bar__filler" style={{ width: `${(100 * this.currentTime) / this.duration}%` }} />
+            height: `${this.height}px`,
+          }}
+        >
+          <canvas id="canvas-display" class="gif-canvas" width={this.width} height={this.height}></canvas>
+
+          <div id="control-bar" class="control-bar">
+            <div
+              class="play-pause-button"
+              onClick={() => {
+                if (this.paused) {
+                  this.startPlaying();
+                } else {
+                  this.pause();
+                }
+              }}
+            >
+              {this.paused ? <div class="play-button" /> : <div class="pause-button" />}
+            </div>
+            <div class="progress-bar">
+              <div class="progress-bar__filler" style={{ width: `${(100 * this.currentTime) / this.duration}%` }} />
+            </div>
           </div>
-          <button
-            onClick={() => {
-              if (this.paused) {
-                this.startPlaying();
-              } else {
-                this.pause();
-              }
-            }}
-            type="button"
-          >
-            {this.paused ? 'Play' : 'Pause'}
-          </button>
         </div>
         <div id="render-canvas-mount-point" class="sr-only" />
         <div id="error-message" style={{ color: 'red' }} />

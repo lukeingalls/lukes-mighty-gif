@@ -260,10 +260,6 @@ export default class Gif {
     gifRequest.send(null);
   }
 
-  private frameDelay() {
-    return this.frames[this._currentFrame].delayTime / Math.abs(this.speed);
-  }
-
   private renderAndSave(frame: Frame) {
     const { render_canvas_ctx, width, height } = this;
     this.renderFrame(frame, render_canvas_ctx);
@@ -332,23 +328,6 @@ export default class Gif {
 
   private renderIntermediateFrames() {
     return this.frames.map(frame => () => this.renderAndSave(frame)).reduce(...chainPromises);
-  }
-
-  private advanceFrame() {
-    let frameNumber = this._currentFrame;
-    frameNumber += this.speed > 0 ? 1 : -1;
-
-    const loopBackward = frameNumber < 0;
-    const loopForward = frameNumber >= this.frames.length;
-    const lastFrame = this.frames.length - 1;
-
-    if (loopBackward || loopForward) {
-      frameNumber = loopForward ? 0 : lastFrame;
-    }
-
-    this.showFrame(frameNumber);
-
-    this.playTimeoutId = window.setTimeout(() => this.advanceFrame(), this.frameDelay());
   }
 
   // Initialize player
