@@ -1,4 +1,4 @@
-import { Component, Host, h, Prop, Watch, Event, EventEmitter, State } from '@stencil/core';
+import { Component, Host, h, Prop, Watch, Event, EventEmitter, State, Listen } from '@stencil/core';
 import Gif from '../helpers';
 import { debounce } from 'lodash';
 
@@ -13,6 +13,7 @@ export class LukesMightyGif {
   startedPlayingAt = 0;
   resetShowControlsIntervalRef: number | null;
   ref: HTMLDivElement | null = null;
+  mouseIsDownForSeek = false;
 
   @Prop() src: string;
   @Prop() controls: boolean;
@@ -36,6 +37,17 @@ export class LukesMightyGif {
   @Event({ eventName: 'onloadstart' }) loadstart: EventEmitter;
   @Event({ eventName: 'onload' }) load: EventEmitter;
   @Event({ eventName: 'onprogress' }) progress: EventEmitter;
+
+  @Listen('mousemove', { target: 'body' })
+  mouseMoved(e: MouseEvent) {
+    console.log('here');
+    if (!this.mouseIsDownForSeek) return;
+    this.debouncedBindCurrentTimeToMouse(e);
+  }
+  @Listen('mouseup', { target: 'body' })
+  handleMouseUp() {
+    this.mouseIsDownForSeek = false;
+  }
 
   @State()
   shouldShowControls = false;
@@ -156,6 +168,17 @@ export class LukesMightyGif {
     console.error(error);
   }
 
+  bindCurrentTimeToMouse(e: MouseEvent) {
+    const rect = (e.target as HTMLDivElement).getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const percent = x / rect.width;
+    const newCurrentTime = percent * this.duration;
+    this.currentTime = newCurrentTime;
+    this.startedPlayingAt = performance.now() - newCurrentTime;
+  }
+  // This isn't that great, but it's better than nothing
+  debouncedBindCurrentTimeToMouse = debounce(this.bindCurrentTimeToMouse, 50);
+
   render() {
     return (
       <Host>
@@ -207,16 +230,12 @@ export class LukesMightyGif {
               </div>
               <div
                 class="progress-bar"
+                onMouseDown={() => {
+                  this.mouseIsDownForSeek = true;
+                }}
                 onClick={e => {
                   e.stopPropagation();
-                  const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
-                  const x = e.clientX - rect.left;
-                  const percent = x / rect.width;
-                  const newCurrentTime = percent * this.duration;
-                  console.log({ x, width: rect.width, percent, ct: this.currentTime, duration: this.duration, ct0: percent * this.duration, ct1: newCurrentTime });
-                  console.log(newCurrentTime);
-                  this.currentTime = newCurrentTime;
-                  this.startedPlayingAt = performance.now() - newCurrentTime;
+                  this.bindCurrentTimeToMouse(e);
                 }}
               >
                 <div class="progress-bar__filler" style={{ width: `${(100 * this.currentTime) / this.duration}%` }} />
