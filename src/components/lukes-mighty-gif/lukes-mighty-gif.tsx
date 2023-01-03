@@ -138,8 +138,8 @@ export class LukesMightyGif {
       this.error.emit(error);
     };
     this.gif.onDurationChange = (duration: number) => {
-      this.durationchange.emit();
       this.duration = duration;
+      this.durationchange.emit();
     };
     this.gif.onProgress = throttle(() => {
       this.progress.emit();

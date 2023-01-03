@@ -24,7 +24,7 @@
     </div>
   </body>
   <script>
-    const src = 'http://localhost:8080/snow.gif';
+    const src = 'http://localhost:8080/soccer-gif';
 
     const img = document.querySelector('img');
     img.src = src;
@@ -35,7 +35,7 @@
     gif.addEventListener('onloadstart', () => console.log('loadstart'));
     gif.addEventListener('onload', () => console.log('load'));
     gif.addEventListener('onerror', () => console.log('error'));
-    gif.addEventListener('ondurationchange', duration => console.log('duration', duration));
+    gif.addEventListener('ondurationchange', () => console.log('duration: ', gif.duration));
     gif.addEventListener('onplay', () => console.log('play'));
     gif.addEventListener('onpause', () => console.log('pause'));
     gif.addEventListener('onseeked', () => console.log('seeked'));
