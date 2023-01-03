@@ -71,17 +71,17 @@ declare namespace LocalJSX {
           * The height of the gif. Defaults to 0. Read-only.
          */
         "height"?: number;
-        "onOncanplay"?: (event: LukesMightyGifCustomEvent<any>) => void;
-        "onOncanplaythrough"?: (event: LukesMightyGifCustomEvent<any>) => void;
-        "onOndurationchange"?: (event: LukesMightyGifCustomEvent<any>) => void;
-        "onOnerror"?: (event: LukesMightyGifCustomEvent<Error>) => void;
-        "onOnload"?: (event: LukesMightyGifCustomEvent<any>) => void;
-        "onOnloadedmetadata"?: (event: LukesMightyGifCustomEvent<any>) => void;
-        "onOnloadstart"?: (event: LukesMightyGifCustomEvent<any>) => void;
-        "onOnpause"?: (event: LukesMightyGifCustomEvent<any>) => void;
-        "onOnplay"?: (event: LukesMightyGifCustomEvent<any>) => void;
-        "onOnprogress"?: (event: LukesMightyGifCustomEvent<any>) => void;
-        "onOnseeked"?: (event: LukesMightyGifCustomEvent<any>) => void;
+        "onCanplay"?: (event: LukesMightyGifCustomEvent<any>) => void;
+        "onCanplaythrough"?: (event: LukesMightyGifCustomEvent<any>) => void;
+        "onDurationchange"?: (event: LukesMightyGifCustomEvent<any>) => void;
+        "onError"?: (event: LukesMightyGifCustomEvent<Error>) => void;
+        "onLoad"?: (event: LukesMightyGifCustomEvent<any>) => void;
+        "onLoadedmetadata"?: (event: LukesMightyGifCustomEvent<any>) => void;
+        "onLoadstart"?: (event: LukesMightyGifCustomEvent<any>) => void;
+        "onPause"?: (event: LukesMightyGifCustomEvent<any>) => void;
+        "onPlay"?: (event: LukesMightyGifCustomEvent<any>) => void;
+        "onProgress"?: (event: LukesMightyGifCustomEvent<any>) => void;
+        "onSeeked"?: (event: LukesMightyGifCustomEvent<any>) => void;
         /**
           * Whether or not the gif is paused. Defaults to true.
          */

@@ -21,19 +21,19 @@
 
 ## Events
 
-| Event              | Description | Type                 |
-| ------------------ | ----------- | -------------------- |
-| `oncanplay`        |             | `CustomEvent<any>`   |
-| `oncanplaythrough` |             | `CustomEvent<any>`   |
-| `ondurationchange` |             | `CustomEvent<any>`   |
-| `onerror`          |             | `CustomEvent<Error>` |
-| `onload`           |             | `CustomEvent<any>`   |
-| `onloadedmetadata` |             | `CustomEvent<any>`   |
-| `onloadstart`      |             | `CustomEvent<any>`   |
-| `onpause`          |             | `CustomEvent<any>`   |
-| `onplay`           |             | `CustomEvent<any>`   |
-| `onprogress`       |             | `CustomEvent<any>`   |
-| `onseeked`         |             | `CustomEvent<any>`   |
+| Event            | Description | Type                 |
+| ---------------- | ----------- | -------------------- |
+| `canplay`        |             | `CustomEvent<any>`   |
+| `canplaythrough` |             | `CustomEvent<any>`   |
+| `durationchange` |             | `CustomEvent<any>`   |
+| `error`          |             | `CustomEvent<Error>` |
+| `load`           |             | `CustomEvent<any>`   |
+| `loadedmetadata` |             | `CustomEvent<any>`   |
+| `loadstart`      |             | `CustomEvent<any>`   |
+| `pause`          |             | `CustomEvent<any>`   |
+| `play`           |             | `CustomEvent<any>`   |
+| `progress`       |             | `CustomEvent<any>`   |
+| `seeked`         |             | `CustomEvent<any>`   |
 
 
 ----------------------------------------------

@@ -50,17 +50,17 @@ export class LukesMightyGif {
    */
   @Prop({ mutable: true }) duration: number = 0;
 
-  @Event({ eventName: 'oncanplay' }) canplay: EventEmitter;
-  @Event({ eventName: 'oncanplaythrough' }) canplaythrough: EventEmitter;
-  @Event({ eventName: 'ondurationchange' }) durationchange: EventEmitter;
-  @Event({ eventName: 'onerror' }) error: EventEmitter<Error>;
-  @Event({ eventName: 'onloadedmetadata' }) loadedmetadata: EventEmitter;
-  @Event({ eventName: 'onloadstart' }) loadstart: EventEmitter;
-  @Event({ eventName: 'onload' }) load: EventEmitter;
-  @Event({ eventName: 'onpause' }) pauseEvent: EventEmitter;
-  @Event({ eventName: 'onplay' }) playEvent: EventEmitter;
-  @Event({ eventName: 'onprogress' }) progress: EventEmitter;
-  @Event({ eventName: 'onseeked' }) seeked: EventEmitter;
+  @Event({ eventName: 'canplay' }) oncanplay: EventEmitter;
+  @Event({ eventName: 'canplaythrough' }) oncanplaythrough: EventEmitter;
+  @Event({ eventName: 'durationchange' }) ondurationchange: EventEmitter;
+  @Event({ eventName: 'error' }) onerror: EventEmitter<Error>;
+  @Event({ eventName: 'loadedmetadata' }) onloadedmetadata: EventEmitter;
+  @Event({ eventName: 'loadstart' }) onloadstart: EventEmitter;
+  @Event({ eventName: 'load' }) onload: EventEmitter;
+  @Event({ eventName: 'pause' }) onpause: EventEmitter;
+  @Event({ eventName: 'play' }) onplay: EventEmitter;
+  @Event({ eventName: 'progress' }) onprogress: EventEmitter;
+  @Event({ eventName: 'seeked' }) onseeked: EventEmitter;
 
   @Listen('mousemove', { target: 'body' })
   mouseMoved(e: MouseEvent) {
@@ -113,7 +113,7 @@ export class LukesMightyGif {
   seek() {
     if (!this.paused) return;
     this.showFrame(this.currentTime);
-    this.seeked.emit();
+    this.onseeked.emit();
   }
 
   @Watch('playbackRate')
@@ -131,30 +131,30 @@ export class LukesMightyGif {
 
   handleSrcChange() {
     this.gif = new Gif(this.src);
-    this.gif.onLoad = () => this.load.emit();
-    this.gif.onLoadStart = () => this.loadstart.emit();
+    this.gif.onLoad = () => this.onload.emit();
+    this.gif.onLoadStart = () => this.onloadstart.emit();
     this.gif.onError = (error: Error) => {
       console.error(error);
-      this.error.emit(error);
+      this.onerror.emit(error);
     };
     this.gif.onDurationChange = (duration: number) => {
       this.duration = duration;
-      this.durationchange.emit();
+      this.ondurationchange.emit();
     };
     this.gif.onProgress = throttle(() => {
-      this.progress.emit();
+      this.onprogress.emit();
     }, 150);
     this.gif.onLoadedMetadata = () => {
       this.duration = this.gif.duration;
       this.width = this.gif.width;
       this.height = this.gif.height;
-      this.loadedmetadata.emit();
+      this.onloadedmetadata.emit();
     };
     this.gif.onCanPlay = () => {
-      this.canplay.emit();
+      this.oncanplay.emit();
     };
     this.gif.onCanPlayThrough = () => {
-      this.canplaythrough.emit();
+      this.oncanplaythrough.emit();
       this.gif.showFrame(0, { display_ctx: this.canvasCtxRef! });
     };
   }
@@ -172,7 +172,7 @@ export class LukesMightyGif {
     this.startedPlayingAt = performance.now() - this.currentTime;
     this.paused = false;
     this._play();
-    this.playEvent.emit();
+    this.onplay.emit();
   }
 
   public pause() {
@@ -205,7 +205,7 @@ export class LukesMightyGif {
       if (!this.paused) {
         this._play();
       } else {
-        this.pauseEvent.emit();
+        this.onpause.emit();
       }
     });
   }

@@ -35,7 +35,8 @@
     gif.addEventListener('onloadstart', () => console.log('loadstart'));
     gif.addEventListener('onload', () => console.log('load'));
     gif.addEventListener('onerror', () => console.log('error'));
-    gif.addEventListener('ondurationchange', () => console.log('duration: ', gif.duration));
+    gif.addEventListener('durationchange', () => console.log('duration: ', gif.duration));
+    gif.ondurationchange = () => console.log('duration 2: ', gif.duration);
     gif.addEventListener('onplay', () => console.log('play'));
     gif.addEventListener('onpause', () => console.log('pause'));
     gif.addEventListener('onseeked', () => console.log('seeked'));
