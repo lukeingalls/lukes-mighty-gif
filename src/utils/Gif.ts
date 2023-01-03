@@ -69,16 +69,16 @@ export default class Gif {
     return this._height;
   }
 
-  private _duration: number;
+  private _durationMS: number;
   get duration() {
-    return this._duration;
+    return this._durationMS / 1000;
   }
 
   private setMetadata({ width, height, duration }: { width?: number; height?: number; duration?: number }) {
     if (typeof width === 'number') this._width = width;
     if (typeof height === 'number') this._height = height;
     if (typeof duration === 'number') {
-      this._duration = duration;
+      this._durationMS = duration;
       this.onDurationChange(duration);
     }
     this.onLoadedMetadata();

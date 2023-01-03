@@ -137,8 +137,8 @@ export class LukesMightyGif {
       console.error(error);
       this.onerror.emit(error);
     };
-    this.gif.onDurationChange = (duration: number) => {
-      this.duration = duration;
+    this.gif.onDurationChange = (durationMS: number) => {
+      this.duration = durationMS / 1000;
       this.ondurationchange.emit();
     };
     this.gif.onProgress = throttle(() => {
@@ -169,7 +169,7 @@ export class LukesMightyGif {
   }
 
   public play() {
-    this.startedPlayingAt = performance.now() - this.currentTime;
+    this.startedPlayingAt = performance.now() / 1000 - this.currentTime;
     this.paused = false;
     this._play();
     this.onplay.emit();
@@ -180,9 +180,10 @@ export class LukesMightyGif {
   }
 
   showFrame(time: number) {
+    const timeMS = time * 1000;
     // @ts-expect-error findLastIndex
     const targetFrameNumber = this.gif.frames.findLastIndex((frame: typeof this['gif']['frames'][number]) => {
-      return frame.renderAtMs <= time;
+      return frame.renderAtMs <= timeMS;
     });
 
     if (targetFrameNumber !== this.gif.currentFrame) {
@@ -191,7 +192,7 @@ export class LukesMightyGif {
   }
 
   private _play() {
-    const timeElapsed = performance.now() - this.startedPlayingAt;
+    const timeElapsed = performance.now() / 1000 - this.startedPlayingAt;
     const stepSize = (timeElapsed - this.currentTime) % this.duration;
     const dirtyTargetTime = (this.currentTime + stepSize * this.playbackRate) % this.duration;
     const targetTime = dirtyTargetTime < 0 ? this.duration + dirtyTargetTime : dirtyTargetTime;
@@ -220,7 +221,7 @@ export class LukesMightyGif {
     const percent = x / rect.width;
     const newCurrentTime = percent * this.duration;
     this.currentTime = newCurrentTime;
-    this.startedPlayingAt = performance.now() - newCurrentTime;
+    this.startedPlayingAt = performance.now() / 1000 - newCurrentTime;
   }
   // This isn't that great, but it's better than nothing
   throttledBindCurrentTimeToMouse = throttle(this.bindCurrentTimeToMouse, 100);
