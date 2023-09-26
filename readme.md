@@ -1,6 +1,6 @@
 # This is a pausible gif webcomponent
 
-It's built buy [luke](https://twitter.com/luke_n_ingalls) so that you could use an api similar to the HTMLMediaElement to treat gifs like videos rather than images.
+It's built by [luke](https://twitter.com/luke_n_ingalls) so that you could use an api similar to the HTMLMediaElement to treat gifs like videos rather than images.
 
 You can install the project via [npm](https://www.npmjs.com/package/lukes-mighty-gif) with
 
